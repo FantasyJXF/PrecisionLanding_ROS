@@ -83,7 +83,7 @@ void landingVelocityControl()
 {
     vs_body_axis.header.seq++;
     vs_body_axis.header.stamp = ros::Time::now();
-cout<<"landingvelocitycontrol errxy: "<<err_x<<" "<<err_y<<endl;
+    cout<<"landingvelocitycontrol errxy: "<<err_x<<" "<<err_y<<endl;
     dt = ros::Time::now().toSec() - last_timestamp;
     //velocity_z set as a constant // PD控制(x y方向)
     vs_body_axis.twist.linear.x = err_x * xyP + (err_x - last_err_x) / dt * xyD;
@@ -121,18 +121,27 @@ int main(int argc, char **argv)
 
     printf("------------landing control node running successfully-------------\n");
 
+    // pub vel_sp
     ros::Publisher bodyAxisVelocityPublisher = nh.advertise<geometry_msgs::TwistStamped>("/mavros/setpoint_velocity/cmd_vel", 10);
+
+    // sub flight mode
     ros::Subscriber stateSubscriber = nh.subscribe("mavros/state", 10, stateReceived);
+
+    // client arm/disarmed
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
+
+    // client set_mode
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
+
+    // sub tag
     ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/tag_detections",1,TagDetectionsReceived);  
     //ros::Subscriber uavPoseSubscriber = nh.subscribe("/mavros/local_position/pose", 1000, uavPoseReceived);
-     //ros::Publisher initial_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
+    //ros::Publisher initial_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
 
     last_err_x = 0;
     last_err_y = 0;
     last_err_z = 0;
-    //last_err_raw = 0;
+    //last_err_yaw = 0;
     cout<<"main in errxy: "<<err_x<<endl;
     // 获取 PID 参数值
     ros::param::param("~xyP", xyP, 0.2);
@@ -141,7 +150,7 @@ int main(int argc, char **argv)
     cout << "got xyD = " << xyD << endl;
 
     ros::Rate loopRate(20.0);
-//setpoint_velocity
+    //setpoint_velocity
     //wait for FCU connection// This loop should exit as soon as a heartbeat message is received.
     // while(ros::ok() && current_state.connected){
     //     ros::spinOnce();

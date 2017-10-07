@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="fcu_url" default="udp://:14540@127.0.0.1:14557" />
+	<arg name="gcs_url" default="udp://192.168.2.173@192.168.2.164:14550" />
+	<arg name="log_output" default="screen" />
+  
+  <arg name="xyP"      default="1.0"/>
+  <arg name="xyI"      default="0.0"/>
+  <arg name="xyD"      default="0.3"/>  
+  <arg name="zP"       default="0.0"/>
+  <arg name="zI"       default="0.0"/>
+  <arg name="zD"       default="0.0"/>  
+  <arg name="yawP"     default="0.4"/>
+
+<!-- mavros apriltag sitl -->
+     <include file="$(find px4)/launch/mavros_posix_sitl_apriltag.launch"></include>
+
+<!-- Apriltags_ros-->
+     <include file="$(find apriltags_ros)/launch/example.launch"></include>
+
+<node name="offboard_position" pkg="offboard_position" type="offboard_position_node" output="screen" >
+</node>  
+
+<!-- 视觉速度控制节点 -->
+  <node name="auto_landing_px4_sitl_node" pkg="auto_landing_px4_sitl" type="auto_landing_px4_sitl_node" output="screen" >
+     <param name="xyP" value="$(arg xyP)" />
+     <param name="xyI" value="$(arg xyI)" />
+     <param name="xyD" value="$(arg xyD)" />
+     <param name="zP" value="$(arg zP)" />
+     <param name="zI" value="$(arg zI)" />
+     <param name="zD" value="$(arg zD)" />
+     <param name="yawP"  value="$(arg yawP)" /> 
+  </node>    
+
+</launch>
+

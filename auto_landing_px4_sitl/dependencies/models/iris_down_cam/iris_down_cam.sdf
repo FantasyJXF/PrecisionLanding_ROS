@@ -1,0 +1,43 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='iris_down_cam'>
+
+    <include>
+      <uri>model://iris</uri>
+    </include>
+
+    <!--include>
+      <uri>model://lidar</uri>
+      <pose>-0.12 0 0 0 3.1415 0</pose>
+    </include>
+    <joint name="lidar_joint" type="revolute">
+      <child>lidar::link</child>
+      <parent>iris::base_link</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <upper>0</upper>
+          <lower>0</lower>
+        </limit>
+      </axis>
+    </joint-->
+
+    <include>
+      <uri>model://camera_ros</uri>
+      <pose>0.1 0 0 0 1.5708 1.5708</pose>
+    </include>
+    <joint name="cam_joint" type="revolute">
+      <child>camera_ros::link</child>
+      <parent>iris::base_link</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <upper>0</upper>
+          <lower>0</lower>
+        </limit>
+      </axis>
+    </joint>
+  </model>
+</sdf>
+
+

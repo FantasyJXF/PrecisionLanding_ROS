@@ -6,15 +6,16 @@
 #include <mavros_msgs/State.h>
 #include <mavros_msgs/SetMode.h>
 #include <apriltags_ros/AprilTagDetectionArray.h>
+#include <tf/tf.h>
+#include <tf/transform_datatypes.h>
 
 using namespace std;
 
 geometry_msgs::TwistStamped vs_body_axis;
-//geometry_msgs::PoseStamped uavPose;
+geometry_msgs::PoseStamped uavPose;
 apriltags_ros::AprilTagDetectionArray apriltag_pos_msg;
-mavros_msgs::State current_state;
 
-//double uavRollENU, uavPitchENU, uavYawENU;
+double uavRollENU, uavPitchENU, uavYawENU;
 
 double err_x, err_y, err_z;
 double last_err_x, last_err_y, last_err_z;
@@ -28,31 +29,79 @@ float uav_altitude = 0.0;
 float uav_x_distance = 0.0;
 float uav_y_distance = 0.0;
 
-bool flag_enter_position_hold = false;
 
-void stateReceived(const mavros_msgs::State::ConstPtr& msg){
+bool flag_offboard_mode = false;
+bool flag_enter_position_hold = false;
+bool flag_enter_manual_adjust = false;
+
+// 判断飞行模式
+mavros_msgs::State current_state;
+void stateReceived(const mavros_msgs::State::ConstPtr& msg) 
+{
+    static bool init_flag = false;
     current_state = *msg;
+
+    if (current_state.mode == "OFFBOARD")
+    {
+        if(!init_flag)
+        {
+            ROS_INFO_STREAM("Offboard Mode"); 
+            init_flag = true;         
+        }
+
+        flag_offboard_mode = true;
+    }
+    else
+    {
+        flag_offboard_mode = false;
+        init_flag = false;  
+    }
 }
+
+// 无人机位置和姿态，From 内部传感器
+void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
+{    
+/*    uavPose.pose.position.x = msg->pose.position.x;
+    uavPose.pose.position.y = msg->pose.position.y;
+    uavPose.pose.position.z = msg->pose.position.z;
+    uavPose.pose.orientation.x = msg->pose.orientation.x; // 四元数
+    uavPose.pose.orientation.y = msg->pose.orientation.y;
+    uavPose.pose.orientation.z = msg->pose.orientation.z;
+    uavPose.pose.orientation.w = msg->pose.orientation.w;
+    
+    // Using ROS tf to get RPY angle from Quaternion
+    tf::Quaternion quat;
+    tf::quaternionMsgToTF(uavPose.pose.orientation, quat);  // 将四元数消息msg转换为四元数
+    tf::Matrix3x3(quat).getRPY(uavRollENU, uavPitchENU, uavYawENU); // 由四元数得到欧拉角
+    //ROS_INFO("Current UAV angles: roll=%0.3f, pitch=%0.3f, yaw=%0.3f", uavRollENU*180/3.1415926, uavPitchENU*180/3.1415926, uavYawENU*180/3.1415926);  
+*/
+    uav_altitude = msg->pose.position.z;
+//    cout<<"The altitude is "<<uav_altitude<<endl;
+
+    err_z = -uav_altitude;
+//    cout<<" err_z"<<err_z<<endl;
+}
+
 
 //obtain the apriltags pose
 void TagDetectionsReceived(const apriltags_ros::AprilTagDetectionArray::ConstPtr& msg)
 {   
     static int flag_not_found_mark = 0;
+
      // 获取无人机相对apriltag的xy距离  
     apriltags_ros::AprilTagDetection tag_msg = msg->detections[0];
+
     uav_x_distance = tag_msg.pose.pose.position.x;
     uav_y_distance = tag_msg.pose.pose.position.y;
-    uav_altitude = tag_msg.pose.pose.position.z;
-
-    cout<<"x: "<<uav_x_distance<<"\t"<<"y: "<<uav_y_distance<<endl;
-
-    cout<<"The alt is "<<uav_altitude<<endl;
+    
     if (abs(uav_x_distance) > 0.01f && abs(uav_y_distance) > 0.01f) 
-    {   // 将无人机与mark在 x y z 方向的距离偏差，分别表示为err_ ,便于控制部分的理解
+    {
+
+       // 将无人机与mark在 x y z 方向的距离偏差，分别表示为err_ ,便于控制部分的理解
         // x轴反向，y,z轴重合
         err_x = uav_x_distance;
         err_y = -uav_y_distance;
-        err_z = -uav_altitude;
+
         //一旦发现标志，将未发现mark的计数标志复位0
         flag_not_found_mark = 0;
 
@@ -60,7 +109,6 @@ void TagDetectionsReceived(const apriltags_ros::AprilTagDetectionArray::ConstPtr
 
         cout<<" err_y "<<err_y<<endl;
 
-        cout<<" err_z"<<err_z<<endl;
     } 
     
     // 说明： 1.8m 只是尝试值，明显有点大
@@ -85,7 +133,7 @@ void TagDetectionsReceived(const apriltags_ros::AprilTagDetectionArray::ConstPtr
         }
     }
 
-    cout<<"TagDetectionsReceived terrxy: "<<err_x<<endl;
+    cout<<"TagDetectionsReceived! "<<endl;
 }
 
 
@@ -132,8 +180,14 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "velocity_marker_land_node");
     ros::NodeHandle nh;
+
+        // arm 与 disarm service 使用
+    mavros_msgs::CommandBool arm_cmd;
+    arm_cmd.request.value = false; // 未解锁
+
     int flag_low_altitude = 0;
     int flag_time = 0;
+
 
     ros::Time time_disarm(0);
 
@@ -151,114 +205,108 @@ int main(int argc, char **argv)
     // client set_mode
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
 
+    // sub uavpose
+    ros::Subscriber uavPoseSubscriber = nh.subscribe("/mavros/local_position/pose", 1000, uavPoseReceived);
+
     // sub tag
     ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/tag_detections",1,TagDetectionsReceived);  
-    //ros::Subscriber uavPoseSubscriber = nh.subscribe("/mavros/local_position/pose", 1000, uavPoseReceived);
+
     //ros::Publisher initial_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
+
+    // client arm/disarm
+    arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
+
 
     last_err_x = 0;
     last_err_y = 0;
     last_err_z = 0;
     //last_err_yaw = 0;
-    cout<<"main in errxy: "<<err_x<<endl;
+    // cout<<"main in errxy: "<<err_x<<endl;
     // 获取 PID 参数值
-    ros::param::param("~xyP", xyP, 0.2);
+    ros::param::param("~xyP", xyP, 0.3);
     ros::param::param("~xyD", xyD, 0.2);
     cout << "got xyP = " << xyP << endl;
     cout << "got xyD = " << xyD << endl;
 
     ros::Rate loopRate(50.0);
-    //setpoint_velocity
-    //wait for FCU connection// This loop should exit as soon as a heartbeat message is received.
-    // while(ros::ok() && current_state.connected){
-    //     ros::spinOnce();
-    //     loopRate.sleep();
-    // }
-
-    mavros_msgs::SetMode offb_set_mode;
-    offb_set_mode.request.custom_mode = "OFFBOARD";
-      
-    mavros_msgs::CommandBool arm_cmd;
-    arm_cmd.request.value = true;
-
-    ros::Time last_request = ros::Time::now();
-
     //set mode offboard
     while(ros::ok()){
-        if( current_state.mode != "OFFBOARD" && (ros::Time::now() - last_request > ros::Duration(5.0))){
-            if( set_mode_client.call(offb_set_mode) &&
-                //offb_set_mode.response.mode_sent){
-                offb_set_mode.response.success){
-                ROS_INFO("Offboard enabled");
-            }
-            last_request = ros::Time::now();
-        } 
-        else{
-            if( !current_state.armed &&
-                (ros::Time::now() - last_request > ros::Duration(5.0))){
-                if( arming_client.call(arm_cmd) &&
-                    arm_cmd.response.success){
-                    ROS_INFO("Vehicle armed");
-                }
-                last_request = ros::Time::now();
-            }
-        }
-
-        if(uav_altitude >= 0.35){
-
-              // 高度大于1.5m，vel_x & vel_y are PD control
-            if(!flag_enter_position_hold ){
-
-                landingVelocityControl();  
-                //cout<<"Offboard auto landing"<<endl;  
-            }
-            else if(flag_enter_position_hold)
-            {
-                   cout<<"Entering PosHold"<<endl;
-                   vs_body_axis.header.seq++;
-                   vs_body_axis.header.stamp = ros::Time::now();
-                   vs_body_axis.twist.linear.x = 0;
-                   vs_body_axis.twist.linear.y = 0;
-                   vs_body_axis.twist.linear.z = 0;
-                   
-            }
-            flag_low_altitude = 0;
-        }
-        else if(uav_altitude < 0.35)
+ 
+        if(flag_offboard_mode)
         {
-            cout<<"Landing ............"<<endl;
-             flag_low_altitude++;
-            if(flag_low_altitude > 2)  
-            {            
-                vs_body_axis.header.seq++;
-                vs_body_axis.header.stamp = ros::Time::now();
-                vs_body_axis.twist.linear.x = 0;
-                vs_body_axis.twist.linear.y = 0;
-                vs_body_axis.twist.linear.z = -0.1;
-
-                if (flag_time == 0)
-                {        
-                    time_disarm = ros::Time::now();
-                    flag_time = 1;
+            // 高度大于0.35m，正常控制飞行
+            if(uav_altitude >= 1.35)
+            {             
+                // 切换到 offboard 模式，且未进入位置保持状态
+                if(flag_offboard_mode && !flag_enter_position_hold && !flag_enter_manual_adjust)
+                {
+                    landingVelocityControl();   
+                    //ROS_INFO_STREAM("Offboard auto control");     
+                }
+                // 在 offboard 模式下，进入位置保持状态, 未进入手动调节模式
+                else if(flag_enter_position_hold && !flag_enter_manual_adjust)
+                {
+                    ROS_INFO_STREAM("Position hold control");
+                    vs_body_axis.header.seq++;
+                    vs_body_axis.header.stamp = ros::Time::now();
+                    vs_body_axis.twist.linear.x = 0.0;
+                    vs_body_axis.twist.linear.y = 0.0;
+                    vs_body_axis.twist.linear.z = 0.0;
+                    vs_body_axis.twist.angular.z = 0.0;
+                }else{
+                    ROS_INFO_STREAM("P666666666666666666666666666l");
                 }
 
-                if ((ros::Time::now() - time_disarm) > ros::Duration(1.0))
-                {
-                    if( arming_client.call(arm_cmd) && arm_cmd.response.success)
+                flag_low_altitude = 0;
+            }
+
+            // 高度小于 0.35m，继续降落，1s 后飞机锁定(防止超声波数据出错，要求低高度预警连续触发3次)
+            else
+            {   
+                ROS_INFO_STREAM("Almost landed");
+                flag_low_altitude++;
+                if(flag_low_altitude > 2)  
+                {        
+                    flag_low_altitude = 3;
+                    vs_body_axis.header.seq++;
+                    vs_body_axis.header.stamp = ros::Time::now();
+                    vs_body_axis.twist.linear.x = 0;
+                    vs_body_axis.twist.linear.y = 0;
+                    vs_body_axis.twist.linear.z = -0.1;
+
+                    if (flag_time == 0)
+                    {        
+                        time_disarm = ros::Time::now();
+                        flag_time = 1;
+                    }
+
+                    if ((ros::Time::now() - time_disarm) > ros::Duration(1.0))
                     {
-                        ROS_INFO("Vehicle disarmed");
-                        return 0;
+                        ROS_INFO_STREAM("getting here");
+                        if( arming_client.call(arm_cmd) && arm_cmd.response.success)
+                        {
+                            ROS_INFO("Vehicle disarmed");
+                            return 0;
+                        }else{
+                            ROS_INFO_STREAM("that's should not happen");
+                        }
+                    }else{
+                        ROS_INFO_STREAM("that's should not happen too");
                     }
                 }
             }
-        }            
-      //发布速度控制量
-        //bodyAxisVelocityPublisher.publish(vs_body_axis);
+        }
+
+        // 此句为测试代码，不用 arm 飞机，直接看速度控制输出量 
+        //landingVelocityControl();
+
+        //发布速度控制量
+        bodyAxisVelocityPublisher.publish(vs_body_axis);
+      
         ros::spinOnce();
         loopRate.sleep();
     }
-
+    
     return 0;
 }
-
 

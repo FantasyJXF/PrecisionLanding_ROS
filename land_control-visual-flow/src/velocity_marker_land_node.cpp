@@ -346,24 +346,24 @@ int main(int argc, char **argv)
     printf("------------landing control node running successfully-------------\n");
 
     // pub vel_sp
-    bodyAxisVelocityPublisher = nh.advertise<geometry_msgs::TwistStamped>("/mavros04/setpoint_velocity/cmd_vel",10);
+    bodyAxisVelocityPublisher = nh.advertise<geometry_msgs::TwistStamped>("/mavros/setpoint_velocity/cmd_vel",10);
 
     // sub flight mode
-    ros::Subscriber stateSubscriber = nh.subscribe("mavros04/state", 10, stateReceived);
+    ros::Subscriber stateSubscriber = nh.subscribe("mavros/state", 10, stateReceived);
 
     // sub image center pixel
     ros::Subscriber markerCenterSubscriber = nh.subscribe("/aruco_single/pixel",1000,markerCenterReceived);  
 
     // sub uavpose
-    ros::Subscriber uavPoseSubscriber = nh.subscribe("/mavros04/local_position/pose", 1000, uavPoseReceived);
+    ros::Subscriber uavPoseSubscriber = nh.subscribe("/mavros/local_position/pose", 1000, uavPoseReceived);
 
     // sub radar distance
-    ros::Subscriber uavAltitudeSubscriber = nh.subscribe("/mavros04/px4flow/ground_distance", 1000, uavAltitudeReceived);
+    ros::Subscriber uavAltitudeSubscriber = nh.subscribe("/mavros/px4flow/ground_distance", 1000, uavAltitudeReceived);
     //ros::Subscriber flightcommandSubscriber = nh.subscribe("/keyboard/keydown",1,sendflightCommand);
     //ros::Subscriber holdcommandSubscriber = nh.subscribe("/keyboard/keyup",1,sendholdCommand);
 
     // client arm/disarm
-    arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros04/cmd/arming");
+    arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
 
     last_err_x = 0;
     last_err_y = 0;

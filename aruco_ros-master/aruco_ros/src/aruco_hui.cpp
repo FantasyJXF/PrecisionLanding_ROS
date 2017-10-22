@@ -12,11 +12,11 @@
 using namespace std;
 
 // 主点坐标
-# define U0 319.0
-# define V0 220.0
+# define U0 326.163612
+# define V0 252.280728
 // 归一化焦距
-# define FOCAL_X 487.0
-# define FOCAL_Y 488.0
+# define FOCAL_X 931.326076
+# define FOCAL_Y 929.492353
 
 geometry_msgs::TwistStamped vs_body_axis;
 geometry_msgs::PoseStamped uavPose;
@@ -82,7 +82,7 @@ void markerCenterReceived(const geometry_msgs::Point& msg)
 */
         huihui.x = uav_altitude*(markcenter.x-U0)/FOCAL_X; // 小孔成像
         huihui.y = uav_altitude*(markcenter.y-V0)/FOCAL_Y;
-        huihui.y = 0.666;
+        huihui.z = 0.666;
 
         cout<<"x "<<huihui.x<<"\t"<<"y "<<huihui.y<<endl;
         // 将无人机与mark在 x y z 方向的距离偏差，分别表示为err_ ,便于控制部分的理解

@@ -33,18 +33,18 @@ int main(int argc, char **argv)
     ros::Rate rate(20.0);
 
     // wait for FCU connection
-    while(ros::ok() && current_state.connected){
+/*    while(ros::ok() && current_state.connected){
         ros::spinOnce();
         rate.sleep();
-    }
+    }*/
 
     geometry_msgs::PoseStamped pose;
-    pose.pose.position.x = 1;
-    pose.pose.position.y = 1;
-    pose.pose.position.z = 10;
+    pose.pose.position.x = 3; // actually the distance in earth frame Y axis
+    pose.pose.position.y = 2; // actually the distance in earth frame X axis
+    pose.pose.position.z = 10; // The height of UAV
 
     //send a few setpoints before starting
-    for(int i = 100; ros::ok() && i > 0; --i){
+    for(int i = 10; ros::ok() && i > 0; --i){
         local_pos_pub.publish(pose);
         ros::spinOnce();
         rate.sleep();
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 
     while(ros::ok()){
         if( current_state.mode != "OFFBOARD" &&
-            (ros::Time::now() - last_request > ros::Duration(5.0))){
+            (ros::Time::now() - last_request > ros::Duration(2.0))){
             if( set_mode_client.call(offb_set_mode) &&
                 offb_set_mode.response.success){
                 ROS_INFO("Offboard enabled");
@@ -68,7 +68,7 @@ int main(int argc, char **argv)
             last_request = ros::Time::now();
         } else {
             if( !current_state.armed &&
-                (ros::Time::now() - last_request > ros::Duration(5.0))){
+                (ros::Time::now() - last_request > ros::Duration(2.0))){
                 if( arming_client.call(arm_cmd) &&
                     arm_cmd.response.success){
                     ROS_INFO("Vehicle armed");

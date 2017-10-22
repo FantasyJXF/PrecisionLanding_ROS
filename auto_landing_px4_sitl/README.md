@@ -38,4 +38,23 @@ export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$(pwd)/Tools/sitl_gazebo
  rosrun image_view image_view image:=/camera/image_raw(通过rostopic type topic_name && rosmsg show msg_name查看camera的主题消息类型)
  ```
 
+* a
+ ```
+ rostopic echo /mavros/local_position/pose
+ ```
 
+* b
+ ```
+ rosrun image_view image_view image:=/tag_detections_image
+ ```
+
+ * c
+  ```
+  rostopic echo /mavros/local_position/velocity
+
+  ```
+
+  * d
+   ```
+   rostopic echo /tag_detections_pose
+   ```

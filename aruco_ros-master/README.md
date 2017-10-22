@@ -1,6 +1,20 @@
 aruco_ros
 =========
 
+## 测试例程
+
+1. 启动aruco检测节点
+ ```
+ roslaunch aruco_ros single.launch
+ ```
+
+> 注意这里设备要与launch文件中对应，包括video号以及tag
+
+2. 实时查看相机输出
+ ```
+ rosrun image_view image_view image:=/aruco_single/result
+ ```
+
 Software package and ROS wrappers of the [Aruco][1] Augmented Reality marker detector library.
 
 

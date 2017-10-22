@@ -45,6 +45,9 @@ target_link_libraries(marker_publisher ${catkin_LIBRARIES})
 add_executable(video src/video.cpp)
 target_link_libraries(video ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
+add_executable(aruco_hui_node src/aruco_hui.cpp)
+target_link_libraries(aruco_hui_node   ${catkin_LIBRARIES}
+)
 #############
 ## Install ##
 #############

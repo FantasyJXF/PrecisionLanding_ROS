@@ -203,7 +203,7 @@ public:
             pixelMsg.y = 0;
             pixelMsg.z = 0;
             pixel_pub.publish(pixelMsg);
-            cout << "mark.x = " << pixelMsg.x << " mark.y =" << pixelMsg.y << endl;
+            cout << "mark_NONE.x = " << pixelMsg.x << " mark_NONE.y =" << pixelMsg.y << endl;
         }
 
         //for each marker, draw info and its boundaries in the image
@@ -258,7 +258,7 @@ public:
             pixelMsg.z = 0;
             pixel_pub.publish(pixelMsg);
 
-            cout << "mark.x = " << pixelMsg.x << " mark.y =" << pixelMsg.y << endl;
+            //cout << "mark26.x = " << pixelMsg.x << " mark26.y =" << pixelMsg.y << endl;
 
             // //Publish rviz marker representing the ArUco marker patch
             // visualization_msgs::Marker visMarker;
@@ -283,8 +283,8 @@ public:
           // but drawing all the detected markers
           markers[i].draw(inImage,cv::Scalar(0,0,255),2);
 
-          //imshow("result", inImage);
-         // waitKey(1);            
+/*          imshow("result", inImage);
+          waitKey(1); */           
         }
 
         //draw a 3d cube in each marker if there is 3d info

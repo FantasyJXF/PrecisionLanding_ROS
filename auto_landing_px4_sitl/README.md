@@ -1,12 +1,15 @@
 ## 操作步骤
 
 ### ROS环境配置
+ 
+```
 cd src/Firmware
 make posix_sitl_default
-source ~/catkin_ws/devel/setup.bash    // (只有mavros是用源码编译的才需要)
-source Tools/setup_gazebo.bash $(pwd) $(pwd)/build_posix_sitl_default
-export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$(pwd)
+source ~/catkin_ws/devel/setup.bash    # (只有mavros是用源码编译的才需要)
+source Tools/setup_gazebo.bash $(pwd) $(pwd)/build_posix_sitl_default 
+export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$(pwd) # 将 px4包添加到ROS路径
 export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$(pwd)/Tools/sitl_gazebo
+```
 
 ### 启动ROS程序
 

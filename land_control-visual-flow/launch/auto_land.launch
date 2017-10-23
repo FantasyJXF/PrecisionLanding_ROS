@@ -1,7 +1,10 @@
 <launch>
-
+<!--
   <arg name="fcu_url" default="/dev/ttyUSB0:921600" />
 	<arg name="gcs_url" default="udp://192.168.2.173@192.168.2.192:14550" />
+-->
+  <arg name="fcu_url" default="serial:///dev/ttyUSB0:921600" />
+  <arg name="gcs_url" default="" />  
 	<arg name="tgt_system" default="1" />
 	<arg name="tgt_component" default="1" />
 	<arg name="log_output" default="screen" />
@@ -33,7 +36,7 @@
 	</include>
 
 <!-- 视觉速度控制节点 -->
-  <node name="velocity_marker_land_node" pkg="velocity_marker_land" type="velocity_marker_land_node" output="screen" >
+<!--  <node name="velocity_marker_land_node" pkg="velocity_marker_land" type="velocity_marker_land_node" output="screen" >
      <param name="xyP" value="$(arg xyP)" />
      <param name="xyI" value="$(arg xyI)" />
      <param name="xyD" value="$(arg xyD)" />
@@ -42,5 +45,5 @@
      <param name="zD" value="$(arg zD)" />
   
   </node>    
-
+-->
 </launch>

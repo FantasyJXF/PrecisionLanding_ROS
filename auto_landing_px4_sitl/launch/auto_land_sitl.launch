@@ -2,7 +2,7 @@
 <launch>
 
   <arg name="fcu_url" default="udp://:14540@127.0.0.1:14557" />
-	<arg name="gcs_url" default="udp://192.168.2.173@192.168.2.164:14550" />
+	<arg name="gcs_url" default="" />
 	<arg name="log_output" default="screen" />
   
   <arg name="xyP"      default="1.0"/>
@@ -14,13 +14,16 @@
   <arg name="yawP"     default="0.4"/>
 
 <!-- mavros apriltag sitl -->
-     <include file="$(find px4)/launch/mavros_posix_sitl_apriltag.launch"></include>
+<!--  <include file="$(find px4)/launch/mavros_posix_sitl_apriltag.launch">    
+  </include>
+
+  <node name="offboard_position" pkg="offboard_position" type="offboard_position_node" output="screen" >
+  </node> 
+-->
 
 <!-- Apriltags_ros-->
-     <include file="$(find apriltags_ros)/launch/example.launch"></include>
-
-<node name="offboard_position" pkg="offboard_position" type="offboard_position_node" output="screen" >
-</node>  
+  <include file="$(find apriltags_ros)/launch/example.launch"></include>
+ 
 
 <!-- 视觉速度控制节点 -->
   <node name="auto_landing_px4_sitl_node" pkg="auto_landing_px4_sitl" type="auto_landing_px4_sitl_node" output="screen" >

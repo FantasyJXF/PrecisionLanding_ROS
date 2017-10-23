@@ -118,18 +118,20 @@ void TagDetectionsReceived(const apriltags_ros::AprilTagDetectionArray::ConstPtr
     {
         flag_not_found_mark++;
         cout<<"It has been "<<flag_not_found_mark<<" times"<<endl;
-        if (uav_altitude > 1.8 && (flag_not_found_mark > 4))
+        if (uav_altitude > 1.8 && (flag_not_found_mark > 0))
         {           
            ROS_INFO_STREAM("Fail to found mark, enter Position Hold");
            flag_enter_position_hold = true;
            cout<<"The position hold flag is "<<(int)flag_enter_position_hold<<endl;
         }
-        if(uav_altitude < 1.8 && (flag_not_found_mark > 4))
+        else if(uav_altitude < 1.8 && (flag_not_found_mark > 4))
         {
             err_x = 0.0;
             err_y = 0.0;
             last_err_x = 0.0;
             last_err_y = 0.0;
+        }else{
+            ROS_INFO_STREAM("000000000000000000000000000000000000");
         }
     }
 
@@ -266,18 +268,21 @@ int main(int argc, char **argv)
                 ROS_INFO_STREAM("Almost landed");
                 flag_low_altitude++;
                 if(flag_low_altitude > 2)  
-                {        
+                {   //cout<<"hehehehhehehehehe "<<flag_low_altitude<<endl;
                     flag_low_altitude = 3;
                     vs_body_axis.header.seq++;
                     vs_body_axis.header.stamp = ros::Time::now();
                     vs_body_axis.twist.linear.x = 0;
                     vs_body_axis.twist.linear.y = 0;
-                    vs_body_axis.twist.linear.z = -0.1;
+                    vs_body_axis.twist.linear.z = -0.15;
 
                     if (flag_time == 0)
                     {        
                         time_disarm = ros::Time::now();
                         flag_time = 1;
+                         ROS_INFO_STREAM("meishibani");
+                    }else{
+                         ROS_INFO_STREAM("youdashi");
                     }
 
                     if ((ros::Time::now() - time_disarm) > ros::Duration(1.0))

@@ -59,6 +59,30 @@ void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
     ROS_INFO("Current UAV angles: roll=%0.3f, pitch=%0.3f, yaw=%0.3f", uavRollENU*180/3.1415926, uavPitchENU*180/3.1415926, uavYawENU*180/3.1415926);  
 }
 
+// 从超声传感器获取飞机高度,并计算高度偏差 
+void uavAltitudeReceived(const sensor_msgs::Range& msg)
+{
+     ROS_INFO("hey jude  dont make me cry");
+    static bool init_flag = false; 
+    if (msg.range > 0.28f)
+    {
+        if(!init_flag)
+        {
+            uav_init_altitude = msg.range;
+            cout<<"the init alt is "<<uav_init_altitude<<endl;
+            init_flag = true; 
+        }
+        else
+        {           
+            uav_altitude = msg.range;
+            cout<<"actural alt is "<<uav_init_altitude<<endl;
+        }
+
+        //cout << "uav_altitude = " << uav_altitude << endl;
+        // 首先控制高度恒定，z轴偏差为目前高度与初始高度之差
+        err_z = uav_init_altitude - uav_altitude;
+    }
+}
 
 // 获取 aruco 坐标中心，并计算无人机相对 x y 距离 
 void markerCenterReceived(const geometry_msgs::Point& msg)
@@ -68,8 +92,7 @@ void markerCenterReceived(const geometry_msgs::Point& msg)
 	// 获取 aruco 坐标中心
 	markcenter.x = msg.x;
 	markcenter.y = msg.y;
-    cout<<"ceter x is "<<markcenter.x<<"  center y is "<<markcenter.y<<endl;
-    uav_altitude = 1;
+    //cout<<"ceter x is "<<markcenter.x<<"  center y is "<<markcenter.y<<endl;
 
     // 当标志中心坐标有效时，计算无人机相对标志 x y 距离
     if (markcenter.x > 0.01f && markcenter.y > 0.01f) 
@@ -82,7 +105,7 @@ void markerCenterReceived(const geometry_msgs::Point& msg)
 */
         huihui.x = uav_altitude*(markcenter.x-U0)/FOCAL_X; // 小孔成像
         huihui.y = uav_altitude*(markcenter.y-V0)/FOCAL_Y;
-        huihui.z = 0.666;
+        huihui.z = uav_altitude;
 
         cout<<"x "<<huihui.x<<"\t"<<"y "<<huihui.y<<endl;
         // 将无人机与mark在 x y z 方向的距离偏差，分别表示为err_ ,便于控制部分的理解
@@ -115,6 +138,9 @@ int main(int argc, char **argv)
 
     // sub uavpose
     ros::Subscriber uavPoseSubscriber = nh.subscribe("/mavros/local_position/pose", 1000, uavPoseReceived);
+
+   // sub radar distance
+    ros::Subscriber uavAltitudeSubscriber = nh.subscribe("/mavros/px4flow/ground_distance", 1000, uavAltitudeReceived);
 
     ros::Publisher mark_err = nh.advertise<geometry_msgs::Point>("/huihui", 10);
 

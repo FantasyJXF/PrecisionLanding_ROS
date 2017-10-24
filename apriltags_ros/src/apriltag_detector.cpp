@@ -12,7 +12,7 @@
 #include <AprilTags/Tag36h9.h>
 #include <AprilTags/Tag36h11.h>
 #include <XmlRpcException.h>
-
+#include "string.h"
 namespace apriltags_ros{
 
 AprilTagDetector::AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& pnh): it_(nh){
@@ -60,6 +60,7 @@ AprilTagDetector::AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& pnh): i
 
   tag_detector_= boost::shared_ptr<AprilTags::TagDetector>(new AprilTags::TagDetector(*tag_codes));
   image_sub_ = it_.subscribeCamera("/camera/image_raw", 1, &AprilTagDetector::imageCb, this);
+  //image_sub_ = it_.subscribeCamera("/image", 1, &AprilTagDetector::imageCb, this);
   image_pub_ = it_.advertise("tag_detections_image", 1);
   detections_pub_ = nh.advertise<AprilTagDetectionArray>("tag_detections", 1);
   pose_pub_ = nh.advertise<geometry_msgs::PoseArray>("tag_detections_pose", 1);
@@ -69,6 +70,7 @@ AprilTagDetector::~AprilTagDetector(){
 }
 
 void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sensor_msgs::CameraInfoConstPtr& cam_info){
+
   cv_bridge::CvImagePtr cv_ptr;
   try{
     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
@@ -124,6 +126,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
     Eigen::Quaternion<double> rot_quaternion = Eigen::Quaternion<double>(rot);
 
     geometry_msgs::PoseStamped tag_pose;
+    
     tag_pose.pose.position.x = transform(0, 3);
     tag_pose.pose.position.y = transform(1, 3);
     tag_pose.pose.position.z = transform(2, 3);
@@ -133,20 +136,22 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
     tag_pose.pose.orientation.w = rot_quaternion.w();
     tag_pose.header = cv_ptr->header;
 
+
     AprilTagDetection tag_detection;
     tag_detection.pose = tag_pose;
     tag_detection.id = detection.id;
     tag_detection.size = tag_size;
     tag_detection_array.detections.push_back(tag_detection);
     tag_pose_array.poses.push_back(tag_pose.pose);
+    ROS_INFO("pos x %f",tag_pose.pose.position.x);
 
     tf::Stamped<tf::Transform> tag_transform;
     tf::poseStampedMsgToTF(tag_pose, tag_transform);
     tf_pub_.sendTransform(tf::StampedTransform(tag_transform, tag_transform.stamp_, tag_transform.frame_id_, description.frame_name()));
-  }
-  detections_pub_.publish(tag_detection_array);
-  pose_pub_.publish(tag_pose_array);
-  image_pub_.publish(cv_ptr->toImageMsg());
+    detections_pub_.publish(tag_detection_array);
+    pose_pub_.publish(tag_pose_array);
+    image_pub_.publish(cv_ptr->toImageMsg());
+  } 
 }
 
 

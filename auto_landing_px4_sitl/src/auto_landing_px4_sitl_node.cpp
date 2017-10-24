@@ -32,7 +32,6 @@ float uav_y_distance = 0.0;
 
 bool flag_offboard_mode = false;
 bool flag_enter_position_hold = false;
-bool flag_enter_manual_adjust = false;
 
 // 判断飞行模式
 mavros_msgs::State current_state;
@@ -118,13 +117,12 @@ void TagDetectionsReceived(const apriltags_ros::AprilTagDetectionArray::ConstPtr
     {
         flag_not_found_mark++;
         cout<<"It has been "<<flag_not_found_mark<<" times"<<endl;
-        if (uav_altitude > 1.8 && (flag_not_found_mark > 0))
+        if (uav_altitude > 1.8 && (flag_not_found_mark > 3))
         {           
            ROS_INFO_STREAM("Fail to found mark, enter Position Hold");
            flag_enter_position_hold = true;
-           cout<<"The position hold flag is "<<(int)flag_enter_position_hold<<endl;
         }
-        else if(uav_altitude < 1.8 && (flag_not_found_mark > 4))
+        else if(uav_altitude < 1.8 && (flag_not_found_mark > 3))
         {
             err_x = 0.0;
             err_y = 0.0;
@@ -155,21 +153,16 @@ void landingVelocityControl()
     //cout<<vs_body_axis.twist.linear.x<<"  "<< vs_body_axis.twist.linear.y<<endl;
 /*    vs_body_axis.twist.linear.x = err_x * xyP;
     vs_body_axis.twist.linear.y = err_y * xyP;*/
+
     vs_body_axis.twist.linear.z = -0.35;//should it be different?
    
     // 速度限幅
-    if(vs_body_axis.twist.linear.x > 0.8)
-        vs_body_axis.twist.linear.x = 0.8;
-    if(vs_body_axis.twist.linear.x < -0.8)
-        vs_body_axis.twist.linear.x = -0.8;   
-    if(vs_body_axis.twist.linear.y > 0.8)
-        vs_body_axis.twist.linear.y = 0.8;
-    if(vs_body_axis.twist.linear.y < -0.8)
-        vs_body_axis.twist.linear.y = -0.8;  
-    if(vs_body_axis.twist.angular.z > 0.4)
-        vs_body_axis.twist.angular.z = 0.4;
-    if(vs_body_axis.twist.angular.z < -0.4)
-        vs_body_axis.twist.angular.z = -0.4;   
+    vs_body_axis.twist.linear.x = (vs_body_axis.twist.linear.x>0.8)?0.8\
+                                  :((vs_body_axis.twist.linear.x<-0.8)?-0.8:vs_body_axis.twist.linear.x);
+    vs_body_axis.twist.linear.y = (vs_body_axis.twist.linear.y>0.8)?0.8\
+                                  :((vs_body_axis.twist.linear.y<-0.8)?-0.8:vs_body_axis.twist.linear.y);
+    vs_body_axis.twist.linear.z = (vs_body_axis.twist.linear.z>0.8)?0.8\
+                                  :((vs_body_axis.twist.linear.z<-0.8)?-0.8:vs_body_axis.twist.linear.z);  
 
     // 更新偏差值 
     last_err_x = err_x;
@@ -190,7 +183,7 @@ int main(int argc, char **argv)
     int flag_low_altitude = 0;
     int flag_time = 0;
 
-
+    last_timestamp = ros::Time::now().toSec();
     ros::Time time_disarm(0);
 
     printf("------------landing control node running successfully-------------\n");
@@ -201,23 +194,20 @@ int main(int argc, char **argv)
     // sub flight mode
     ros::Subscriber stateSubscriber = nh.subscribe("mavros/state", 10, stateReceived);
 
-    // client arm/disarmed
-    ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
-
-    // client set_mode
-    ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
-
     // sub uavpose
     ros::Subscriber uavPoseSubscriber = nh.subscribe("/mavros/local_position/pose", 1000, uavPoseReceived);
 
     // sub tag
-    ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/tag_detections",1,TagDetectionsReceived);  
+    ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/tag_detections",5,TagDetectionsReceived);  
 
     //ros::Publisher initial_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
 
-    // client arm/disarm
-    arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
 
+    // client arm/disarmed
+    ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
+
+    // client set_mode
+    //ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
 
     last_err_x = 0;
     last_err_y = 0;
@@ -237,16 +227,16 @@ int main(int argc, char **argv)
         if(flag_offboard_mode)
         {
             // 高度大于0.35m，正常控制飞行
-            if(uav_altitude >= 1.35)
+            if(uav_altitude >= 0.35)
             {             
                 // 切换到 offboard 模式，且未进入位置保持状态
-                if(flag_offboard_mode && !flag_enter_position_hold && !flag_enter_manual_adjust)
+                if(!flag_enter_position_hold)
                 {
                     landingVelocityControl();   
                     //ROS_INFO_STREAM("Offboard auto control");     
                 }
                 // 在 offboard 模式下，进入位置保持状态, 未进入手动调节模式
-                else if(flag_enter_position_hold && !flag_enter_manual_adjust)
+                else
                 {
                     ROS_INFO_STREAM("Position hold control");
                     vs_body_axis.header.seq++;
@@ -255,8 +245,6 @@ int main(int argc, char **argv)
                     vs_body_axis.twist.linear.y = 0.0;
                     vs_body_axis.twist.linear.z = 0.0;
                     vs_body_axis.twist.angular.z = 0.0;
-                }else{
-                    ROS_INFO_STREAM("P666666666666666666666666666l");
                 }
 
                 flag_low_altitude = 0;
@@ -274,15 +262,13 @@ int main(int argc, char **argv)
                     vs_body_axis.header.stamp = ros::Time::now();
                     vs_body_axis.twist.linear.x = 0;
                     vs_body_axis.twist.linear.y = 0;
-                    vs_body_axis.twist.linear.z = -0.15;
+                    vs_body_axis.twist.linear.z = -0.1;
 
                     if (flag_time == 0)
                     {        
                         time_disarm = ros::Time::now();
                         flag_time = 1;
-                         ROS_INFO_STREAM("meishibani");
-                    }else{
-                         ROS_INFO_STREAM("youdashi");
+                         //ROS_INFO_STREAM("meishibani");
                     }
 
                     if ((ros::Time::now() - time_disarm) > ros::Duration(1.0))
@@ -295,11 +281,13 @@ int main(int argc, char **argv)
                         }else{
                             ROS_INFO_STREAM("that's should not happen");
                         }
-                    }else{
-                        ROS_INFO_STREAM("that's should not happen too");
                     }
                 }
             }
+        }
+        else
+        {
+            ROS_INFO_STREAM("Offboard not running");
         }
 
         // 此句为测试代码，不用 arm 飞机，直接看速度控制输出量 

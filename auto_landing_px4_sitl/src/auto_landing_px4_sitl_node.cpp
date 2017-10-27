@@ -13,7 +13,6 @@ using namespace std;
 
 geometry_msgs::TwistStamped vs_body_axis;
 geometry_msgs::PoseStamped uavPose;
-apriltags_ros::AprilTagDetectionArray apriltag_pos_msg;
 
 double uavRollENU, uavPitchENU, uavYawENU;
 
@@ -83,17 +82,15 @@ void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
 
 
 //obtain the apriltags pose
-void TagDetectionsReceived(const apriltags_ros::AprilTagDetectionArray::ConstPtr& msg)
+void TagDetectionsReceived(const geometry_msgs::PoseStamped::ConstPtr& tag_msg)
 {   
     static int flag_not_found_mark = 0;
 
      // 获取无人机相对apriltag的xy距离  
-    apriltags_ros::AprilTagDetection tag_msg = msg->detections[0];
-
-    uav_x_distance = tag_msg.pose.pose.position.x;
-    uav_y_distance = tag_msg.pose.pose.position.y;
+    uav_x_distance = tag_msg->pose.position.x;
+    uav_y_distance = tag_msg->pose.position.y;
     
-    if (abs(uav_x_distance) > 0.01f && abs(uav_y_distance) > 0.01f) 
+    if (abs(uav_x_distance) > 0 && abs(uav_y_distance) > 0) 
     {
 
        // 将无人机与mark在 x y z 方向的距离偏差，分别表示为err_ ,便于控制部分的理解
@@ -104,9 +101,7 @@ void TagDetectionsReceived(const apriltags_ros::AprilTagDetectionArray::ConstPtr
         //一旦发现标志，将未发现mark的计数标志复位0
         flag_not_found_mark = 0;
 
-        cout<<" err_x "<<err_x<<endl;
-
-        cout<<" err_y "<<err_y<<endl;
+        cout<<" err_x "<<err_x<<" err_y "<<err_y<<endl;
 
     } 
     
@@ -117,23 +112,25 @@ void TagDetectionsReceived(const apriltags_ros::AprilTagDetectionArray::ConstPtr
     {
         flag_not_found_mark++;
         cout<<"It has been "<<flag_not_found_mark<<" times"<<endl;
-        if (uav_altitude > 1.8 && (flag_not_found_mark > 3))
+        if (uav_altitude > 1.8 && (flag_not_found_mark >= 4))
         {           
            ROS_INFO_STREAM("Fail to found mark, enter Position Hold");
            flag_enter_position_hold = true;
         }
-        else if(uav_altitude < 1.8 && (flag_not_found_mark > 3))
+        else if(uav_altitude < 1.8 && (flag_not_found_mark >= 4))
         {
             err_x = 0.0;
             err_y = 0.0;
             last_err_x = 0.0;
             last_err_y = 0.0;
         }else{
+            err_x = uav_x_distance;
+            err_y = -uav_y_distance;
             ROS_INFO_STREAM("000000000000000000000000000000000000");
         }
     }
 
-    cout<<"TagDetectionsReceived! "<<endl;
+    //cout<<"TagDetectionsReceived! "<<endl;
 }
 
 
@@ -145,16 +142,41 @@ void landingVelocityControl()
     vs_body_axis.header.stamp = ros::Time::now();
     //cout<<"landingvelocitycontrol errxy: "<<err_x<<" "<<err_y<<endl;
     dt = ros::Time::now().toSec() - last_timestamp;
-    //velocity_z set as a constant // PD控制(x y方向)
-    vs_body_axis.twist.linear.x = err_x * xyP + (err_x - last_err_x) / dt * xyD;
+
+    // 当 x y方向位置偏差小于阈值时(阈值与高度相关)，逐渐降落，同时x y方向在继续调整偏差(0.3待调整)
+    if (!(fabs(err_x) < 0.5) && !(fabs(err_y) < 0.5))
+    {
+        vs_body_axis.twist.linear.x = 0.8 * (err_x * xyP + (err_x - last_err_x) / dt * xyD);
+        vs_body_axis.twist.linear.y = 0.8 * (err_y * xyP + (err_y - last_err_y) / dt * xyD);
+        vs_body_axis.twist.linear.z = 0;
+    }
+    else 
+    {
+        vs_body_axis.twist.linear.x = err_x * xyP + (err_x - last_err_x) / dt * xyD;
+        vs_body_axis.twist.linear.y = err_y * xyP + (err_y - last_err_y) / dt * xyD;
+        vs_body_axis.twist.linear.z = -0.3;
+    }
+
+    // PD控制(x y方向)
+/*    vs_body_axis.twist.linear.x = err_x * xyP + (err_x - last_err_x) / dt * xyD;
     vs_body_axis.twist.linear.y = err_y * xyP + (err_y - last_err_y) / dt * xyD;
 
-    // output the vel
-    //cout<<vs_body_axis.twist.linear.x<<"  "<< vs_body_axis.twist.linear.y<<endl;
-/*    vs_body_axis.twist.linear.x = err_x * xyP;
-    vs_body_axis.twist.linear.y = err_y * xyP;*/
+    // 由于 x y方向的 err值与高度相关，当高度很小时，err很小，造成控制量很小，因此加大控制的 P 值
+    if(uav_altitude < 1.0) 
+    {
+        // PD控制(x y方向)
+        vs_body_axis.twist.linear.x = err_x * xyP * 1.3 + (err_x - last_err_x) / dt * xyD;              
+        vs_body_axis.twist.linear.y = err_y * xyP * 1.3 + (err_y - last_err_y) / dt * xyD;
+    }*/
 
-    vs_body_axis.twist.linear.z = -0.35;//should it be different?
+
+    // 由于 x y方向的 err值与高度相关，当高度很小时，err很小，造成控制量很小，因此加大控制的 P 值
+    if(uav_altitude < 1.0) 
+    {
+        // PD控制(x y方向)
+        vs_body_axis.twist.linear.x = err_x * xyP * 1.2;              
+        vs_body_axis.twist.linear.y = err_y * xyP * 1.2;
+    }
    
     // 速度限幅
     vs_body_axis.twist.linear.x = (vs_body_axis.twist.linear.x>0.8)?0.8\
@@ -185,6 +207,7 @@ int main(int argc, char **argv)
 
     last_timestamp = ros::Time::now().toSec();
     ros::Time time_disarm(0);
+    ros::Time time_land(0);
 
     printf("------------landing control node running successfully-------------\n");
 
@@ -198,16 +221,15 @@ int main(int argc, char **argv)
     ros::Subscriber uavPoseSubscriber = nh.subscribe("/mavros/local_position/pose", 1000, uavPoseReceived);
 
     // sub tag
-    ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/tag_detections",5,TagDetectionsReceived);  
-
-    //ros::Publisher initial_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
+    //ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/tag_detections",5,TagDetectionsReceived);  
+    ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/rel_pose",5,TagDetectionsReceived);  
 
 
     // client arm/disarmed
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
 
     // client set_mode
-    //ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
+    ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("/mavros/set_mode");
 
     last_err_x = 0;
     last_err_y = 0;
@@ -215,10 +237,15 @@ int main(int argc, char **argv)
     //last_err_yaw = 0;
     // cout<<"main in errxy: "<<err_x<<endl;
     // 获取 PID 参数值
-    ros::param::param("~xyP", xyP, 0.3);
-    ros::param::param("~xyD", xyD, 0.2);
+    ros::param::get("~xyP",xyP);
+    ros::param::get("~xyD",xyD);
+/*    ros::param::param("~xyP", xyP, 0.3);
+    ros::param::param("~xyD", xyD, 0.2);*/
     cout << "got xyP = " << xyP << endl;
     cout << "got xyD = " << xyD << endl;
+
+    mavros_msgs::SetMode land_set_mode;
+    land_set_mode.request.custom_mode = "AUTO.LAND";
 
     ros::Rate loopRate(50.0);
     //set mode offboard
@@ -245,6 +272,18 @@ int main(int argc, char **argv)
                     vs_body_axis.twist.linear.y = 0.0;
                     vs_body_axis.twist.linear.z = 0.0;
                     vs_body_axis.twist.angular.z = 0.0;
+                       
+                    time_land = ros::Time::now();              
+
+                    if (ros::Time::now() - time_land > ros::Duration(5.0))
+                    {
+                        if( set_mode_client.call(land_set_mode) &&
+                            land_set_mode.response.mode_sent){
+                            ROS_INFO("AUTO LAND enabled");
+                        }else{
+                            ROS_INFO_STREAM("wobukaixinle");
+                        }
+                    }                    
                 }
 
                 flag_low_altitude = 0;

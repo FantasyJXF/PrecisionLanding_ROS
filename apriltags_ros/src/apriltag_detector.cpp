@@ -59,11 +59,12 @@ AprilTagDetector::AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& pnh): i
   }
 
   tag_detector_= boost::shared_ptr<AprilTags::TagDetector>(new AprilTags::TagDetector(*tag_codes));
-  image_sub_ = it_.subscribeCamera("/camera/image_raw", 1, &AprilTagDetector::imageCb, this);
-  //image_sub_ = it_.subscribeCamera("/image", 1, &AprilTagDetector::imageCb, this);
-  image_pub_ = it_.advertise("tag_detections_image", 1);
-  detections_pub_ = nh.advertise<AprilTagDetectionArray>("tag_detections", 1);
-  pose_pub_ = nh.advertise<geometry_msgs::PoseArray>("tag_detections_pose", 1);
+  image_sub_ = it_.subscribeCamera("/camera/image_raw", 5, &AprilTagDetector::imageCb, this);
+  //image_sub_ = it_.subscribeCamera("/image", 30, &AprilTagDetector::imageCb, this);
+  image_pub_ = it_.advertise("tag_detections_image", 30);
+  //detections_pub_ = nh.advertise<AprilTagDetectionArray>("tag_detections", 1);
+  //pose_pub_ = nh.advertise<geometry_msgs::PoseArray>("tag_detections_pose", 1);
+  rel_pose_pub_ = nh.advertise<geometry_msgs::PoseStamped>("rel_pose",30);
 }
 AprilTagDetector::~AprilTagDetector(){
   image_sub_.shutdown();
@@ -111,6 +112,18 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
   geometry_msgs::PoseArray tag_pose_array;
   tag_pose_array.header = cv_ptr->header;
 
+
+  geometry_msgs::PoseStamped tag_pose;
+    
+  tag_pose.pose.position.x = 0;
+  tag_pose.pose.position.y = 0;
+  tag_pose.pose.position.z = 0;
+  tag_pose.pose.orientation.x = 0;
+  tag_pose.pose.orientation.y = 0;
+  tag_pose.pose.orientation.z = 0;
+  tag_pose.pose.orientation.w = 0;
+  tag_pose.header = cv_ptr->header;
+
   BOOST_FOREACH(AprilTags::TagDetection detection, detections){
     std::map<int, AprilTagDescription>::const_iterator description_itr = descriptions_.find(detection.id);
     if(description_itr == descriptions_.end()){
@@ -125,7 +138,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
     Eigen::Matrix3d rot = transform.block(0, 0, 3, 3);
     Eigen::Quaternion<double> rot_quaternion = Eigen::Quaternion<double>(rot);
 
-    geometry_msgs::PoseStamped tag_pose;
+//    geometry_msgs::PoseStamped tag_pose;
     
     tag_pose.pose.position.x = transform(0, 3);
     tag_pose.pose.position.y = transform(1, 3);
@@ -135,7 +148,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
     tag_pose.pose.orientation.z = rot_quaternion.z();
     tag_pose.pose.orientation.w = rot_quaternion.w();
     tag_pose.header = cv_ptr->header;
-
+    //ROS_INFO("heheda %f",tag_pose.pose.position.z);
 
     AprilTagDetection tag_detection;
     tag_detection.pose = tag_pose;
@@ -143,15 +156,16 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
     tag_detection.size = tag_size;
     tag_detection_array.detections.push_back(tag_detection);
     tag_pose_array.poses.push_back(tag_pose.pose);
-    ROS_INFO("pos x %f",tag_pose.pose.position.x);
+    //ROS_INFO("pos x %f",tag_pose.pose.position.x);
 
     tf::Stamped<tf::Transform> tag_transform;
     tf::poseStampedMsgToTF(tag_pose, tag_transform);
     tf_pub_.sendTransform(tf::StampedTransform(tag_transform, tag_transform.stamp_, tag_transform.frame_id_, description.frame_name()));
-    detections_pub_.publish(tag_detection_array);
-    pose_pub_.publish(tag_pose_array);
-    image_pub_.publish(cv_ptr->toImageMsg());
-  } 
+  }
+    //detections_pub_.publish(tag_detection_array);
+    //pose_pub_.publish(tag_pose_array);
+    rel_pose_pub_.publish(tag_pose);
+    image_pub_.publish(cv_ptr->toImageMsg()); 
 }
 
 

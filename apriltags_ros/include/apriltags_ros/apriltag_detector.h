@@ -39,6 +39,7 @@ class AprilTagDetector{
   image_transport::Publisher image_pub_;
   ros::Publisher detections_pub_;
   ros::Publisher pose_pub_;
+  ros::Publisher rel_pose_pub_;
   tf::TransformBroadcaster tf_pub_;
   boost::shared_ptr<AprilTags::TagDetector> tag_detector_;
   bool projected_optics_;

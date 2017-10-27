@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+  
+<!-- Apriltags_ros-->
+  <include file="$(find apriltags_ros)/launch/example.launch"></include>
+ 
+
+<!-- 视觉速度控制节点 -->
+  <node name="pose_detec_node" pkg="apriltags_ros" type="apriltag_hui_node" output="screen" >
+  </node>    
+
+</launch>
+

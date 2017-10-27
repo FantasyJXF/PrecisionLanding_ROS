@@ -204,6 +204,7 @@ int main(int argc, char **argv)
 
     int flag_low_altitude = 0;
     int flag_time = 0;
+    int flag_time1 = 0;
 
     last_timestamp = ros::Time::now().toSec();
     ros::Time time_disarm(0);
@@ -273,7 +274,12 @@ int main(int argc, char **argv)
                     vs_body_axis.twist.linear.z = 0.0;
                     vs_body_axis.twist.angular.z = 0.0;
                        
-                    time_land = ros::Time::now();              
+                    if (flag_time1 == 0)
+                    {        
+                        time_land = ros::Time::now();
+                        flag_time1 = 1;
+                         //ROS_INFO_STREAM("youdianleile");
+                    }         
 
                     if (ros::Time::now() - time_land > ros::Duration(5.0))
                     {

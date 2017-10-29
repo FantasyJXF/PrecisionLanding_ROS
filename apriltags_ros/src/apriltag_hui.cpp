@@ -46,9 +46,9 @@ void TagDetections(const geometry_msgs::PoseStamped::ConstPtr& tag_msg)
                 Current UAV angles: \n roll=%0.3f \n pitch=%0.3f \n  yaw=%0.3f", uavPose.pose.position.x,
                 uavPose.pose.position.y,uavPose.pose.position.z,uavRollENU*180/3.1415926, uavPitchENU*180/3.1415926, uavYawENU*180/3.1415926);  
 */
-        fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n ", uavPose.pose.position.x,
-                uavPose.pose.position.y,uavPose.pose.position.z);  
+        fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n ", uavPose.pose.position.x,uavPose.pose.position.y,uavPose.pose.position.z);  
 
+        cout<<"TagDetectionsReceived! "<<endl;
     } 
     else    
     {
@@ -57,7 +57,6 @@ void TagDetections(const geometry_msgs::PoseStamped::ConstPtr& tag_msg)
 
     }
 
-    cout<<"TagDetectionsReceived! "<<endl;
 }
 
 
@@ -70,7 +69,7 @@ int main(int argc, char **argv)
     
     // sub tag
     //ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/tag_detections",1,TagDetections);  
-    ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/rel_pose",30,TagDetections); 
+    ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/rel_pose",5,TagDetections); 
 
     ros::Rate loopRate(50.0);
     while(ros::ok()){

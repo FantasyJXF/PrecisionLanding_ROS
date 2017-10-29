@@ -39,9 +39,9 @@ int main(int argc, char **argv)
     }*/
 
     geometry_msgs::PoseStamped pose;
-    pose.pose.position.x = 6; // actually the distance in earth frame Y axis
-    pose.pose.position.y = 6; // actually the distance in earth frame X axis
-    pose.pose.position.z = 5; // The height of UAV
+    pose.pose.position.x = 4; // actually the distance in earth frame Y axis
+    pose.pose.position.y = 4; // actually the distance in earth frame X axis
+    pose.pose.position.z = 12; // The height of UAV
 
     //send a few setpoints before starting
     for(int i = 10; ros::ok() && i > 0; --i){

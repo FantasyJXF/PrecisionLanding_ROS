@@ -61,10 +61,10 @@ AprilTagDetector::AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& pnh): i
   tag_detector_= boost::shared_ptr<AprilTags::TagDetector>(new AprilTags::TagDetector(*tag_codes));
   image_sub_ = it_.subscribeCamera("/camera/image_raw", 5, &AprilTagDetector::imageCb, this);
   //image_sub_ = it_.subscribeCamera("/image", 30, &AprilTagDetector::imageCb, this);
-  image_pub_ = it_.advertise("tag_detections_image", 30);
+  image_pub_ = it_.advertise("tag_detections_image", 5);
   //detections_pub_ = nh.advertise<AprilTagDetectionArray>("tag_detections", 1);
   //pose_pub_ = nh.advertise<geometry_msgs::PoseArray>("tag_detections_pose", 1);
-  rel_pose_pub_ = nh.advertise<geometry_msgs::PoseStamped>("rel_pose",30);
+  rel_pose_pub_ = nh.advertise<geometry_msgs::PoseStamped>("rel_pose",5);
 }
 AprilTagDetector::~AprilTagDetector(){
   image_sub_.shutdown();

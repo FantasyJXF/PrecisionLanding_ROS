@@ -19,7 +19,6 @@
 
 <!-- Apriltags_ros-->
   <include file="$(find apriltags_ros)/launch/example.launch"></include>
- 
 
 <!-- 视觉速度控制节点 -->
   <node name="auto_landing_px4_sitl_node" pkg="auto_landing_px4_sitl" type="auto_landing_px4_sitl_node" output="screen" >

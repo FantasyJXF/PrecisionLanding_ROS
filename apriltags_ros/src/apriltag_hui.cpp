@@ -9,6 +9,8 @@
 #include <tf/tf.h>
 #include <tf/transform_datatypes.h>
 #include "stdio.h"
+#include "unistd.h"   
+#include "stdlib.h"  
 
 using namespace std;
 
@@ -20,7 +22,44 @@ float uav_altitude = 0.0;
 float uav_x_distance = 0.0;
 float uav_y_distance = 0.0;
 
+static const unsigned MAX_NO_LOGFILE = 999;     /**< Maximum number of log files */
+static const char *log_dir = "/home/fantasy/logs";
+
 FILE *fd = NULL;
+
+bool file_exist(char *file)  
+{  
+    return (0 == access(file,F_OK));  // 0 means the file exists; -1 means not
+}  
+
+FILE* open_log_file( )
+{
+
+    /* string to hold the path to the log */
+    char log_file_name[64] = "";
+    char log_file_path[sizeof(log_file_name) + 64] = "";
+
+    unsigned file_number = 1; // start with file log001
+
+    /* look for the next file that does not exist */
+    while (file_number <= MAX_NO_LOGFILE) {
+
+        /* format log file path: e.g. /home/fantasy/logs/log001.txt */
+        snprintf(log_file_name, sizeof(log_file_name), "log%03u.txt", file_number);
+        snprintf(log_file_path, sizeof(log_file_path), "%s/%s", log_dir,log_file_name);
+
+        if (!file_exist(log_file_path)) {
+            break;
+        }
+
+        file_number++;
+    }
+
+    FILE *_fd = fopen(log_file_path,"a+");
+
+    return _fd;
+}
+
 
 
 //obtain the apriltags pose
@@ -64,9 +103,9 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "apriltag_hui");
     ros::NodeHandle nh;
-
-    fd = fopen("/home/fantasy/bagfiles/fantasy.txt","a+");
     
+    fd = open_log_file();
+
     // sub tag
     //ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/tag_detections",1,TagDetections);  
     ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/rel_pose",5,TagDetections); 

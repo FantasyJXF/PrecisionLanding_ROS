@@ -45,7 +45,7 @@ FILE* open_log_file( )
     while (file_number <= MAX_NO_LOGFILE) {
 
         /* format log file path: e.g. /home/fantasy/logs/log001.txt */
-        snprintf(log_file_name, sizeof(log_file_name), "log%03u.txt", file_number);
+        snprintf(log_file_name, sizeof(log_file_name), "apriltag_%03u.txt", file_number);
         snprintf(log_file_path, sizeof(log_file_path), "%s/%s", log_dir,log_file_name);
 
         if (!file_exist(log_file_path)) {

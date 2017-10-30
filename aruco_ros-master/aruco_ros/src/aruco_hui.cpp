@@ -12,11 +12,12 @@
 using namespace std;
 
 // 主点坐标
-# define U0 326.163612
-# define V0 252.280728
+# define U0 349.701395
+# define V0 242.461950
+
 // 归一化焦距
-# define FOCAL_X 931.326076
-# define FOCAL_Y 929.492353
+# define FOCAL_X 941.776547
+# define FOCAL_Y 942.487566
 
 geometry_msgs::TwistStamped vs_body_axis;
 geometry_msgs::PoseStamped uavPose;
@@ -30,8 +31,6 @@ double last_err_x, last_err_y, last_err_z;
 double last_err_roll, last_err_pitch, last_err_raw;
 double last_timestamp;
 
-double xyP, xyI, xyD, zP, zI, zD, yawP, yawD;
-double dt;
 
 float uav_init_altitude = 0.0;
 float uav_altitude = 0.0;     
@@ -40,6 +39,43 @@ float uav_y_distance = 0.0;
 
 geometry_msgs::Point huihui;
 
+static const unsigned MAX_NO_LOGFILE = 999;     /**< Maximum number of log files */
+static const char *log_dir = "/home/fantasy/logs";
+
+FILE *fd = NULL;
+
+bool file_exist(char *file)  
+{  
+    return (0 == access(file,F_OK));  // 0 means the file exists; -1 means not
+}  
+
+FILE* open_log_file( )
+{
+
+    /* string to hold the path to the log */
+    char log_file_name[64] = "";
+    char log_file_path[sizeof(log_file_name) + 64] = "";
+
+    unsigned file_number = 1; // start with file log001
+
+    /* look for the next file that does not exist */
+    while (file_number <= MAX_NO_LOGFILE) {
+
+        /* format log file path: e.g. /home/fantasy/logs/log001.txt */
+        snprintf(log_file_name, sizeof(log_file_name), "aruco_%03u.txt", file_number);
+        snprintf(log_file_path, sizeof(log_file_path), "%s/%s", log_dir,log_file_name);
+
+        if (!file_exist(log_file_path)) {
+            break;
+        }
+
+        file_number++;
+    }
+
+    FILE *_fd = fopen(log_file_path,"a+");
+
+    return _fd;
+}
 
 // 无人机位置和姿态，From 内部传感器
 void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
@@ -81,6 +117,8 @@ void uavAltitudeReceived(const sensor_msgs::Range& msg)
         //cout << "uav_altitude = " << uav_altitude << endl;
         // 首先控制高度恒定，z轴偏差为目前高度与初始高度之差
         err_z = uav_init_altitude - uav_altitude;
+    }else{
+        ROS_INFO_STREAM("The height is under 0.28m");
     }
 }
 
@@ -97,7 +135,7 @@ void markerCenterReceived(const geometry_msgs::Point& msg)
     // 当标志中心坐标有效时，计算无人机相对标志 x y 距离
     if (markcenter.x > 0.01f && markcenter.y > 0.01f) 
     {
-        ROS_INFO_STREAM("haode ");
+
 /*    	uav_x_distance = uav_altitude*(markcenter.x-U0)/FOCAL_X; // 小孔成像
     	uav_y_distance = uav_altitude*(markcenter.y-V0)/FOCAL_Y;
 
@@ -108,16 +146,20 @@ void markerCenterReceived(const geometry_msgs::Point& msg)
         huihui.z = uav_altitude;
 
         cout<<"x "<<huihui.x<<"\t"<<"y "<<huihui.y<<endl;
+
+        fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n ", huihui.x,huihui.y,huihui.z);  
+
+
         // 将无人机与mark在 x y z 方向的距离偏差，分别表示为err_ ,便于控制部分的理解
         // 图像坐标系与Vicon坐标系，x轴反向，y轴重合
-    	err_x = -uav_x_distance;
-    	err_y = uav_y_distance;
+    	err_x = -huihui.x;
+    	err_y = huihui.y;
 
     } 
     else
     {
         
-        ROS_INFO_STREAM("Fail to found mark, enter Position Hold");
+        ROS_INFO_STREAM("Fail to found mark");
 
     }
 }
@@ -129,7 +171,7 @@ int main(int argc, char **argv)
     ros::NodeHandle nh;
 
     int flag_time = 0;
-
+    fd = open_log_file();
 
     printf("------------that's funny -------------\n");
 

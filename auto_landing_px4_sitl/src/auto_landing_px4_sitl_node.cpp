@@ -32,6 +32,11 @@ float uav_y_distance = 0.0;
 bool flag_offboard_mode = false;
 bool flag_enter_position_hold = false;
 
+static const unsigned MAX_NO_LOGFILE = 999;     /**< Maximum number of log files */
+static const char *log_dir = "/home/fantasy/logs";
+
+FILE *fd = NULL;
+
 // 判断飞行模式
 mavros_msgs::State current_state;
 void stateReceived(const mavros_msgs::State::ConstPtr& msg) 
@@ -54,6 +59,41 @@ void stateReceived(const mavros_msgs::State::ConstPtr& msg)
         flag_offboard_mode = false;
         init_flag = false;  
     }
+}
+
+
+
+bool file_exist(char *file)  
+{  
+    return (0 == access(file,F_OK));  // 0 means the file exists; -1 means not
+}  
+
+FILE* open_log_file( )
+{
+
+    /* string to hold the path to the log */
+    char log_file_name[64] = "";
+    char log_file_path[sizeof(log_file_name) + 64] = "";
+
+    unsigned file_number = 1; // start with file log001
+
+    /* look for the next file that does not exist */
+    while (file_number <= MAX_NO_LOGFILE) {
+
+        /* format log file path: e.g. /home/fantasy/logs/log001.txt */
+        snprintf(log_file_name, sizeof(log_file_name), "sitl_%03u.txt", file_number);
+        snprintf(log_file_path, sizeof(log_file_path), "%s/%s", log_dir,log_file_name);
+
+        if (!file_exist(log_file_path)) {
+            break;
+        }
+
+        file_number++;
+    }
+
+    FILE *_fd = fopen(log_file_path,"a+");
+
+    return _fd;
 }
 
 // 无人机位置和姿态，From 内部传感器
@@ -129,7 +169,7 @@ void TagDetectionsReceived(const geometry_msgs::PoseStamped::ConstPtr& tag_msg)
             ROS_INFO_STREAM("000000000000000000000000000000000000");
         }
     }
-
+    fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n ",err_x,err_y,uav_altitude);  
     //cout<<"TagDetectionsReceived! "<<endl;
 }
 
@@ -201,6 +241,8 @@ int main(int argc, char **argv)
         // arm 与 disarm service 使用
     mavros_msgs::CommandBool arm_cmd;
     arm_cmd.request.value = false; // 未解锁
+
+    fd = open_log_file();
 
     int flag_low_altitude = 0;
     int flag_time = 0;

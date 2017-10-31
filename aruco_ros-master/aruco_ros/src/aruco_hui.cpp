@@ -80,7 +80,7 @@ FILE* open_log_file( )
 // 无人机位置和姿态，From 内部传感器
 void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
 {    
-    uavPose.pose.position.x = msg->pose.position.x;
+/*    uavPose.pose.position.x = msg->pose.position.x;
     uavPose.pose.position.y = msg->pose.position.y;
     uavPose.pose.position.z = msg->pose.position.z;
     uavPose.pose.orientation.x = msg->pose.orientation.x; // 四元数
@@ -93,10 +93,32 @@ void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
     tf::quaternionMsgToTF(uavPose.pose.orientation, quat);  // 将四元数消息msg转换为四元数
     tf::Matrix3x3(quat).getRPY(uavRollENU, uavPitchENU, uavYawENU); // 由四元数得到欧拉角
     ROS_INFO("Current UAV angles: roll=%0.3f, pitch=%0.3f, yaw=%0.3f", uavRollENU*180/3.1415926, uavPitchENU*180/3.1415926, uavYawENU*180/3.1415926);  
+*/
+    static bool init_flag = false; 
+    if (msg->pose.position.z > 0.28f)
+    {
+        if(!init_flag)
+        {
+            uav_init_altitude = msg->pose.position.z;
+            cout<<"the init alt is "<<uav_init_altitude<<endl;
+            init_flag = true; 
+        }
+        else
+        {           
+            uav_altitude = msg->pose.position.z;
+            cout<<"actural alt is "<<uav_init_altitude<<endl;
+        }
+
+        //cout << "uav_altitude = " << uav_altitude << endl;
+        // 首先控制高度恒定，z轴偏差为目前高度与初始高度之差
+        err_z = uav_init_altitude - uav_altitude;
+    }else{
+        ROS_INFO_STREAM("The height is under 0.28m");
+    }  
 }
 
 // 从超声传感器获取飞机高度,并计算高度偏差 
-void uavAltitudeReceived(const sensor_msgs::Range& msg)
+/*void uavAltitudeReceived(const sensor_msgs::Range& msg)
 {
      ROS_INFO("hey jude  dont make me cry");
     static bool init_flag = false; 
@@ -120,7 +142,7 @@ void uavAltitudeReceived(const sensor_msgs::Range& msg)
     }else{
         ROS_INFO_STREAM("The height is under 0.28m");
     }
-}
+}*/
 
 // 获取 aruco 坐标中心，并计算无人机相对 x y 距离 
 void markerCenterReceived(const geometry_msgs::Point& msg)
@@ -181,8 +203,8 @@ int main(int argc, char **argv)
     // sub uavpose
     ros::Subscriber uavPoseSubscriber = nh.subscribe("/mavros/local_position/pose", 1000, uavPoseReceived);
 
-   // sub radar distance
-    ros::Subscriber uavAltitudeSubscriber = nh.subscribe("/mavros/px4flow/ground_distance", 1000, uavAltitudeReceived);
+    // sub radar distance
+    //ros::Subscriber uavAltitudeSubscriber = nh.subscribe("/mavros/px4flow/ground_distance", 1000, uavAltitudeReceived);
 
     ros::Publisher mark_err = nh.advertise<geometry_msgs::Point>("/huihui", 10);
 

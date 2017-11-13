@@ -27,6 +27,7 @@ float uav_init_altitude = 0.0;
 float uav_altitude = 0.0;     
 float uav_x_distance = 0.0;
 float uav_y_distance = 0.0;
+float uav_z_distance = 0.0;
 
 
 bool flag_offboard_mode = false;
@@ -99,7 +100,7 @@ FILE* open_log_file( )
 // 无人机位置和姿态，From 内部传感器
 void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
 {    
-/*    uavPose.pose.position.x = msg->pose.position.x;
+    uavPose.pose.position.x = msg->pose.position.x;
     uavPose.pose.position.y = msg->pose.position.y;
     uavPose.pose.position.z = msg->pose.position.z;
     uavPose.pose.orientation.x = msg->pose.orientation.x; // 四元数
@@ -112,12 +113,12 @@ void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
     tf::quaternionMsgToTF(uavPose.pose.orientation, quat);  // 将四元数消息msg转换为四元数
     tf::Matrix3x3(quat).getRPY(uavRollENU, uavPitchENU, uavYawENU); // 由四元数得到欧拉角
     //ROS_INFO("Current UAV angles: roll=%0.3f, pitch=%0.3f, yaw=%0.3f", uavRollENU*180/3.1415926, uavPitchENU*180/3.1415926, uavYawENU*180/3.1415926);  
-*/
+
     uav_altitude = msg->pose.position.z;
-//    cout<<"The altitude is "<<uav_altitude<<endl;
+    //cout<<"The altitude is "<<uav_altitude<<endl;
 
     err_z = -uav_altitude;
-//    cout<<" err_z"<<err_z<<endl;
+    fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n ",uavPose.pose.position.x,uavPose.pose.position.y,uavPose.pose.position.z); 
 }
 
 
@@ -129,7 +130,9 @@ void TagDetectionsReceived(const geometry_msgs::PoseStamped::ConstPtr& tag_msg)
      // 获取无人机相对apriltag的xy距离  
     uav_x_distance = tag_msg->pose.position.x;
     uav_y_distance = tag_msg->pose.position.y;
+    uav_z_distance = tag_msg->pose.position.z;
     
+
     if (abs(uav_x_distance) > 0 && abs(uav_y_distance) > 0) 
     {
 
@@ -169,8 +172,9 @@ void TagDetectionsReceived(const geometry_msgs::PoseStamped::ConstPtr& tag_msg)
             ROS_INFO_STREAM("000000000000000000000000000000000000");
         }
     }
-    fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n ",err_x,err_y,uav_altitude);  
-    //cout<<"TagDetectionsReceived! "<<endl;
+
+    //fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n ",err_x,err_y,uav_altitude);  
+
 }
 
 
@@ -294,7 +298,7 @@ int main(int argc, char **argv)
     //set mode offboard
     while(ros::ok()){
  
-        if(flag_offboard_mode)
+        /*if(flag_offboard_mode)
         {
             // 高度大于0.35m，正常控制飞行
             if(uav_altitude >= 0.35)
@@ -375,13 +379,13 @@ int main(int argc, char **argv)
         else
         {
             ROS_INFO_STREAM("Offboard not running");
-        }
+        }*/
 
         // 此句为测试代码，不用 arm 飞机，直接看速度控制输出量 
         //landingVelocityControl();
 
         //发布速度控制量
-        bodyAxisVelocityPublisher.publish(vs_body_axis);
+       // bodyAxisVelocityPublisher.publish(vs_body_axis);
       
         ros::spinOnce();
         loopRate.sleep();

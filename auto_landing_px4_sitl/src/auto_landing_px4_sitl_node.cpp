@@ -198,7 +198,7 @@ void landingVelocityControl()
     {
         vs_body_axis.twist.linear.x = err_x * xyP + (err_x - last_err_x) / dt * xyD;
         vs_body_axis.twist.linear.y = err_y * xyP + (err_y - last_err_y) / dt * xyD;
-        vs_body_axis.twist.linear.z = -0.3;
+        vs_body_axis.twist.linear.z = -0.25;
     }
 
     // PD控制(x y方向)
@@ -218,8 +218,8 @@ void landingVelocityControl()
     if(uav_altitude < 1.0) 
     {
         // PD控制(x y方向)
-        vs_body_axis.twist.linear.x = err_x * xyP * 1.2;              
-        vs_body_axis.twist.linear.y = err_y * xyP * 1.2;
+        vs_body_axis.twist.linear.x = err_x * xyP;              
+        vs_body_axis.twist.linear.y = err_y * xyP;
     }
    
     // 速度限幅
@@ -298,7 +298,7 @@ int main(int argc, char **argv)
     //set mode offboard
     while(ros::ok()){
  
-        /*if(flag_offboard_mode)
+        if(flag_offboard_mode)
         {
             // 高度大于0.35m，正常控制飞行
             if(uav_altitude >= 0.35)
@@ -379,13 +379,13 @@ int main(int argc, char **argv)
         else
         {
             ROS_INFO_STREAM("Offboard not running");
-        }*/
+        }
 
         // 此句为测试代码，不用 arm 飞机，直接看速度控制输出量 
         //landingVelocityControl();
 
         //发布速度控制量
-       // bodyAxisVelocityPublisher.publish(vs_body_axis);
+        bodyAxisVelocityPublisher.publish(vs_body_axis);
       
         ros::spinOnce();
         loopRate.sleep();

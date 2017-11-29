@@ -26,13 +26,9 @@ export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$(pwd)/Tools/sitl_gazebo
 
 * 进行目标识别
  ``` 
- roslaunch apriltag_ros example.launch
+ roslaunch auto_landing_px4_sitl auto_land_sitl.launch
  ```
 
-* 自动着陆
- ```
- rosrun auto_landing_px4_sitl auto_landing_px4_sitl_node
- ```
 
 ### 结果查看
 

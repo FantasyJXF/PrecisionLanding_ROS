@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <launch>
   
-  <arg name="xyP"      default="0.3"/>
+  <arg name="xyP"      default="0.25"/>
   <arg name="xyI"      default="0.0"/>
-  <arg name="xyD"      default="0.1"/>  
+  <arg name="xyD"      default="0.0"/>  
   <arg name="zP"       default="0.0"/>
   <arg name="zI"       default="0.0"/>
   <arg name="zD"       default="0.0"/>  

@@ -227,8 +227,8 @@ void landingVelocityControl()
                                   :((vs_body_axis.twist.linear.x<-0.8)?-0.8:vs_body_axis.twist.linear.x);
     vs_body_axis.twist.linear.y = (vs_body_axis.twist.linear.y>0.8)?0.8\
                                   :((vs_body_axis.twist.linear.y<-0.8)?-0.8:vs_body_axis.twist.linear.y);
-    vs_body_axis.twist.linear.z = (vs_body_axis.twist.linear.z>0.8)?0.8\
-                                  :((vs_body_axis.twist.linear.z<-0.8)?-0.8:vs_body_axis.twist.linear.z);  
+    vs_body_axis.twist.linear.z = (vs_body_axis.twist.linear.z>0.5)?0.5\
+                                  :((vs_body_axis.twist.linear.z<-0.5)?-0.5:vs_body_axis.twist.linear.z);  
 
     // 更新偏差值 
     last_err_x = err_x;
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "velocity_marker_land_node");
     ros::NodeHandle nh;
 
-        // arm 与 disarm service 使用
+    // arm 与 disarm service 使用
     mavros_msgs::CommandBool arm_cmd;
     arm_cmd.request.value = false; // 未解锁
 
@@ -347,7 +347,8 @@ int main(int argc, char **argv)
                 ROS_INFO_STREAM("Almost landed");
                 flag_low_altitude++;
                 if(flag_low_altitude > 2)  
-                {   //cout<<"hehehehhehehehehe "<<flag_low_altitude<<endl;
+                {   
+                    //cout<<"hehehehhehehehehe "<<flag_low_altitude<<endl;
                     flag_low_altitude = 3;
                     vs_body_axis.header.seq++;
                     vs_body_axis.header.stamp = ros::Time::now();

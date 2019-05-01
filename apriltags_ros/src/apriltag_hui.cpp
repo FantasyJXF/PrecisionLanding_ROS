@@ -23,7 +23,7 @@ float uav_x_distance = 0.0;
 float uav_y_distance = 0.0;
 
 static const unsigned MAX_NO_LOGFILE = 999;     /**< Maximum number of log files */
-static const char *log_dir = "/home/fantasy/logs";
+static const char *log_dir = "/home/breeze/logs";
 
 FILE *fd = NULL;
 
@@ -81,10 +81,10 @@ void TagDetections(const geometry_msgs::PoseStamped::ConstPtr& tag_msg)
         tf::Quaternion quat;
         tf::quaternionMsgToTF(uavPose.pose.orientation, quat);  // 将四元数消息msg转换为四元数
         tf::Matrix3x3(quat).getRPY(uavRollENU, uavPitchENU, uavYawENU); // 由四元数得到欧拉角
-/*        ROS_INFO("Current relative position: \n X = %0.3f \n Y = %0.3f \n Z = %0.3f \n \
+        ROS_INFO("Current relative position: \n X = %0.3f \n Y = %0.3f \n Z = %0.3f \n \
                 Current UAV angles: \n roll=%0.3f \n pitch=%0.3f \n  yaw=%0.3f", uavPose.pose.position.x,
                 uavPose.pose.position.y,uavPose.pose.position.z,uavRollENU*180/3.1415926, uavPitchENU*180/3.1415926, uavYawENU*180/3.1415926);  
-*/
+
         fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n ", uavPose.pose.position.x,uavPose.pose.position.y,uavPose.pose.position.z);  
 
         cout<<"TagDetectionsReceived! "<<endl;

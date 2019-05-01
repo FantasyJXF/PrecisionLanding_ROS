@@ -70,7 +70,7 @@ target_link_libraries(apriltag_detector_node
   apriltag_detector
 )
 
-add_executable(apriltag_hui_node src/apriltag_hui.cpp)
+add_executable(apriltag_hui_node src/apriltag_hui_node.cpp)
 target_link_libraries(apriltag_hui_node
   ${catkin_LIBRARIES}
   apriltag_detector

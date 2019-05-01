@@ -6,7 +6,7 @@
  
 
 <!-- 视觉速度控制节点 -->
-  <node name="pose_detec_node" pkg="apriltags_ros" type="apriltag_hui_node" output="screen" >
+  <node pkg="apriltags_ros" type="apriltag_hui_node" name="pose_detec_node" output="screen" >
   </node>    
 
 </launch>

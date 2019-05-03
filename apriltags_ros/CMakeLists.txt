@@ -5,7 +5,7 @@ project(apriltags_ros)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  apriltags
+  apriltags1
   image_transport
   roscpp
   sensor_msgs

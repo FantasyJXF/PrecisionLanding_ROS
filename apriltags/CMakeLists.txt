@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(apriltags)
+project(apriltags1)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -12,7 +12,7 @@ find_package(OpenCV REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES apriltags
+  LIBRARIES apriltags1
   CATKIN_DEPENDS
   DEPENDS Eigen OpenCV
 )
@@ -24,10 +24,10 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(apriltags
+add_library(apriltags1
   src/Edge.cc src/FloatImage.cc src/GLine2D.cc src/GLineSegment2D.cc src/Gaussian.cc src/GrayModel.cc src/Homography33.cc src/MathUtil.cc src/Quad.cc src/Segment.cc src/TagDetection.cc src/TagDetector.cc src/TagFamily.cc src/UnionFindSimple.cc
 )
-target_link_libraries(apriltags
+target_link_libraries(apriltags1
   ${Eigen_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${catkin_LIBRARIES}
@@ -38,7 +38,7 @@ target_link_libraries(apriltags
 #############
 
 ## Mark executables and/or libraries for installation
-install(TARGETS apriltags
+install(TARGETS apriltags1
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

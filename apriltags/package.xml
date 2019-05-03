@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>apriltags</name>
+  <name>apriltags1</name>
   <version>0.1.2</version>
   <description>A catkin version of the C++ apriltags library</description>
 

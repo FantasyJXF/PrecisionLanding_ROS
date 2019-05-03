@@ -5,7 +5,7 @@ project(auto_landing_px4_sitl)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  apriltags_ros
+  apriltags
   geometry_msgs
   mavros
   roscpp

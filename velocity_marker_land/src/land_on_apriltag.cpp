@@ -1,13 +1,12 @@
-//visual-flow-landing
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/State.h>
 #include <mavros_msgs/SetMode.h>
-//#include <apriltags_ros/AprilTagDetectionArray.h>
 #include <tf/tf.h>
 #include <tf/transform_datatypes.h>
+//#include <apriltags/AprilTagDetections.h>
 
 using namespace std;
 
@@ -34,7 +33,7 @@ bool flag_offboard_mode = false;
 bool flag_enter_position_hold = false;
 
 static const unsigned MAX_NO_LOGFILE = 999;     /**< Maximum number of log files */
-static const char *log_dir = "/home/fantasy/logs";
+static const char *log_dir = "/home/breeze/logs";
 
 FILE *fd = NULL;
 
@@ -62,14 +61,12 @@ void stateReceived(const mavros_msgs::State::ConstPtr& msg)
     }
 }
 
-
-
 bool file_exist(char *file)  
 {  
     return (0 == access(file,F_OK));  // 0 means the file exists; -1 means not
 }  
 
-FILE* open_log_file( )
+FILE* open_log_file()
 {
 
     /* string to hold the path to the log */
@@ -83,7 +80,7 @@ FILE* open_log_file( )
 
         /* format log file path: e.g. /home/fantasy/logs/log001.txt */
         snprintf(log_file_name, sizeof(log_file_name), "sitl_%03u.txt", file_number);
-        snprintf(log_file_path, sizeof(log_file_path), "%s/%s", log_dir,log_file_name);
+        snprintf(log_file_path, sizeof(log_file_path), "%s/%s", log_dir, log_file_name);
 
         if (!file_exist(log_file_path)) {
             break;
@@ -92,7 +89,7 @@ FILE* open_log_file( )
         file_number++;
     }
 
-    FILE *_fd = fopen(log_file_path,"a+");
+    FILE *_fd = fopen(log_file_path, "a+");
 
     return _fd;
 }
@@ -123,15 +120,21 @@ void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
 
 
 //obtain the apriltags pose
-void TagDetectionsReceived(const geometry_msgs::PoseStamped::ConstPtr& tag_msg)
+void TagDetectionsReceived(const geometry_msgs::Pose::ConstPtr& tag_msg)
 {   
+
     static int flag_not_found_mark = 0;
 
-     // 获取无人机相对apriltag的xy距离  
-    uav_x_distance = tag_msg->pose.position.x;
-    uav_y_distance = tag_msg->pose.position.y;
-    uav_z_distance = tag_msg->pose.position.z;
+    // 获取无人机相对apriltag的xy距离  
+    // For geometry_msgs::PoseStamped::ConstPtr& tag_msg
+    // uav_x_distance = tag_msg->pose.position.x;
+    // uav_y_distance = tag_msg->pose.position.y;
+    // uav_z_distance = tag_msg->pose.position.z;
     
+    // For geometry_msgs::Pose::ConstPtr& tag_msg
+    uav_x_distance = tag_msg->position.x;
+    uav_y_distance = tag_msg->position.y;
+    uav_z_distance = tag_msg->position.z;
 
     if (abs(uav_x_distance) > 0 && abs(uav_y_distance) > 0) 
     {
@@ -176,8 +179,6 @@ void TagDetectionsReceived(const geometry_msgs::PoseStamped::ConstPtr& tag_msg)
     //fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n ",err_x,err_y,uav_altitude);  
 
 }
-
-
 
 // 飞机降落速度控制
 void landingVelocityControl()
@@ -236,10 +237,9 @@ void landingVelocityControl()
     last_timestamp = ros::Time::now().toSec();
 }
 
-
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "velocity_marker_land_node");
+    ros::init(argc, argv, "land_on_apriltag");
     ros::NodeHandle nh;
 
     // arm 与 disarm service 使用
@@ -268,9 +268,8 @@ int main(int argc, char **argv)
     ros::Subscriber uavPoseSubscriber = nh.subscribe("/mavros/local_position/pose", 1000, uavPoseReceived);
 
     // sub tag
-    //ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/tag_detections",5,TagDetectionsReceived);  
-    ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/rel_pose",5,TagDetectionsReceived);  
-
+    //ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/apriltags/detections", 5, TagDetectionsReceived);  
+    ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/apriltags/rel_pose", 5, TagDetectionsReceived);  
 
     // client arm/disarmed
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
@@ -286,8 +285,9 @@ int main(int argc, char **argv)
     // 获取 PID 参数值
     ros::param::get("~xyP",xyP);
     ros::param::get("~xyD",xyD);
-/*    ros::param::param("~xyP", xyP, 0.3);
-    ros::param::param("~xyD", xyD, 0.2);*/
+
+    // ros::param::param("~xyP", xyP, 0.3);
+    // ros::param::param("~xyD", xyD, 0.2);
     cout << "got xyP = " << xyP << endl;
     cout << "got xyD = " << xyD << endl;
 
@@ -379,7 +379,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            ROS_INFO_STREAM("Offboard not running");
+            //ROS_INFO_STREAM("Offboard not running");
         }
 
         // 此句为测试代码，不用 arm 飞机，直接看速度控制输出量 

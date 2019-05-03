@@ -9,18 +9,18 @@
   <arg name="zD"       default="0.0"/>  
   <arg name="yawP"     default="0.4"/>
 
-<!-- mavros apriltag sitl -->
-<!--  <include file="$(find px4)/launch/mavros_posix_sitl_apriltag.launch">    
+  <!-- mavros apriltag sitl -->
+  <!--  <include file="$(find px4)/launch/mavros_posix_sitl_apriltag.launch">    
   </include>
 
   <node name="offboard_position" pkg="offboard_position" type="offboard_position_node" output="screen" >
   </node> 
--->
+  -->
 
-<!-- Apriltags_ros-->
-  <include file="$(find apriltags_ros)/launch/example.launch"></include>
+  <!-- Apriltags_ros-->
+  <include file="$(find apriltags)/launch/example.launch"></include>
 
-<!-- 视觉速度控制节点 -->
+  <!-- 视觉速度控制节点 -->
   <node name="auto_landing_px4_sitl_node" pkg="auto_landing_px4_sitl" type="auto_landing_px4_sitl_node" output="screen" >
      <param name="xyP" value="$(arg xyP)" />
      <param name="xyI" value="$(arg xyI)" />

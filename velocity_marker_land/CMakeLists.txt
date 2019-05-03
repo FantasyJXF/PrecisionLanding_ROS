@@ -30,14 +30,17 @@ include_directories(
 
 ## Declare a C++ executable
 add_executable(velocity_marker_land_node src/velocity_marker_land_node.cpp)
-
 #add_executable(tracking_pid_node src/tracking_pid.cpp)
 
+add_executable(land_on_apriltag src/land_on_apriltag.cpp)
 #add_dependencies(velocity_marker_tracker_node $(velocity_marker_tracker)_gencfg)
 
 
 ## Specify libraries to link a library or executable target against
- target_link_libraries(velocity_marker_land_node
-   ${catkin_LIBRARIES}
- )
+target_link_libraries(velocity_marker_land_node
+  ${catkin_LIBRARIES}
+)
 
+target_link_libraries(land_on_apriltag
+${catkin_LIBRARIES}
+)

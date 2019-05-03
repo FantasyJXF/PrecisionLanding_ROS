@@ -9,12 +9,12 @@
 	<arg name="tgt_component" default="1" />
 	<arg name="log_output" default="screen" />
 
-       <arg name="xyP"      default="0.8"/>
-       <arg name="xyI"      default="0.0"/>
-       <arg name="xyD"      default="0.14"/>  
-       <arg name="zP"       default="0.0"/>
-       <arg name="zI"       default="0.0"/>
-       <arg name="zD"       default="0.0"/>  
+  <arg name="xyP"      default="0.8"/>
+  <arg name="xyI"      default="0.0"/>
+  <arg name="xyD"      default="0.14"/>  
+  <arg name="zP"       default="0.0"/>
+  <arg name="zI"       default="0.0"/>
+  <arg name="zD"       default="0.0"/>  
 
 <!-- mavros -->
 	<include file="$(find mavros)/launch/node.launch">
@@ -26,13 +26,19 @@
 		<arg name="tgt_system" value="$(arg tgt_system)" />
 		<arg name="tgt_component" value="$(arg tgt_component)" />
 		<arg name="log_output" value="$(arg log_output)" />
-    <!-- <param name="mocap/use_tf" value="false"/>
-    <param name="mocap/use_pose" value="true"/>  -->
 	</include>
 
-<!-- Aruco Tag 识别算法 -->
-	<include file="$(find aruco_ros)/launch/single.launch">
 
+  <!-- 显示摄像头 -->
+	<include file="$(find usb_cam)/launch/usb_cam-test.launch">
+	</include>
+
+  <!-- Aruco Tag 识别算法 -->
+	<!-- <include file="$(find aruco_ros)/launch/single.launch">
+	</include> -->
+
+  <!-- April Tag 识别算法 -->
+	<include file="$(find apriltags)/launch/tag_detection.launch">
 	</include>
 
 <!-- 视觉速度控制节点 -->
@@ -46,4 +52,15 @@
   
   </node>    
 -->
+
+<!-- 视觉速度控制节点 -->
+  <node pkg="velocity_marker_land" type="land_on_apriltag" name="land_on_apriltag_node"  output="screen" >
+     <param name="xyP" value="$(arg xyP)" />
+     <param name="xyI" value="$(arg xyI)" />
+     <param name="xyD" value="$(arg xyD)" />
+     <param name="zP" value="$(arg zP)" />
+     <param name="zI" value="$(arg zI)" />
+     <param name="zD" value="$(arg zD)" />
+  </node>
+      
 </launch>

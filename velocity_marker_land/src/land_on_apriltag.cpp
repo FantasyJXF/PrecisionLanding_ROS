@@ -115,9 +115,6 @@ void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
     //cout<<"The altitude is "<<uav_altitude<<endl;
 
     err_z = -uav_altitude;
-    fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n", uavPose.pose.position.x,
-                                                         uavPose.pose.position.y,
-                                                         uavPose.pose.position.z); 
 }
 
 
@@ -137,6 +134,10 @@ void TagDetectionsReceived(const geometry_msgs::Pose::ConstPtr& tag_msg)
     uav_x_distance = tag_msg->position.x;
     uav_y_distance = tag_msg->position.y;
     uav_z_distance = tag_msg->position.z;
+
+	fprintf(fd,"X = %0.3f \nY = %0.3f \nZ = %0.3f \n", uav_x_distance,
+                                                         uav_x_distance,
+                                                         uav_x_distance); 
 
     if (abs(uav_x_distance) > 0 && abs(uav_y_distance) > 0) 
     {
@@ -271,7 +272,7 @@ int main(int argc, char **argv)
 
     // sub tag
     //ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/apriltags/detections", 5, TagDetectionsReceived);  
-    ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/apriltags/rel_pose", 5, TagDetectionsReceived);  
+    ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/apriltags/rel_pose", 20, TagDetectionsReceived);  
 
     // client arm/disarmed
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");

@@ -79,7 +79,7 @@ FILE* open_log_file()
     while (file_number <= MAX_NO_LOGFILE) {
 
         /* format log file path: e.g. /home/fantasy/logs/log001.txt */
-        snprintf(log_file_name, sizeof(log_file_name), "sitl_%03u.txt", file_number);
+        snprintf(log_file_name, sizeof(log_file_name), "position_%03u.txt", file_number);
         snprintf(log_file_path, sizeof(log_file_path), "%s/%s", log_dir, log_file_name);
 
         if (!file_exist(log_file_path)) {
@@ -115,7 +115,9 @@ void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
     //cout<<"The altitude is "<<uav_altitude<<endl;
 
     err_z = -uav_altitude;
-    fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n ",uavPose.pose.position.x,uavPose.pose.position.y,uavPose.pose.position.z); 
+    fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f\n ", uavPose.pose.position.x,
+                                                         uavPose.pose.position.y,
+                                                         uavPose.pose.position.z); 
 }
 
 
@@ -185,7 +187,7 @@ void landingVelocityControl()
 {
     vs_body_axis.header.seq++;
     vs_body_axis.header.stamp = ros::Time::now();
-    //cout<<"landingvelocitycontrol errxy: "<<err_x<<" "<<err_y<<endl;
+    cout<<"landing velocity control err_x/y: "<<err_x<<" "<<err_y<<endl;
     dt = ros::Time::now().toSec() - last_timestamp;
 
     // 当 x y方向位置偏差小于阈值时(阈值与高度相关)，逐渐降落，同时x y方向在继续调整偏差(0.3待调整)

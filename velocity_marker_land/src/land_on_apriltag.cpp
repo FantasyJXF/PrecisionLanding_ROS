@@ -6,7 +6,6 @@
 #include <mavros_msgs/SetMode.h>
 #include <tf/tf.h>
 #include <tf/transform_datatypes.h>
-//#include <apriltags/AprilTagDetections.h>
 
 using namespace std;
 
@@ -33,7 +32,7 @@ bool flag_offboard_mode = false;
 bool flag_enter_position_hold = false;
 
 static const unsigned MAX_NO_LOGFILE = 999;     /**< Maximum number of log files */
-static const char *log_dir = "/home/breeze/logs";
+static const char *log_dir = "/home/odroid/logs";
 
 FILE *fd = NULL;
 
@@ -80,6 +79,7 @@ FILE* open_log_file()
 
         /* format log file path: e.g. /home/fantasy/logs/log001.txt */
         snprintf(log_file_name, sizeof(log_file_name), "position_%03u.txt", file_number);
+		// create the directory if it not exist, or will Segment Fault
         snprintf(log_file_path, sizeof(log_file_path), "%s/%s", log_dir, log_file_name);
 
         if (!file_exist(log_file_path)) {
@@ -115,7 +115,7 @@ void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
     //cout<<"The altitude is "<<uav_altitude<<endl;
 
     err_z = -uav_altitude;
-    fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f\n ", uavPose.pose.position.x,
+    fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n", uavPose.pose.position.x,
                                                          uavPose.pose.position.y,
                                                          uavPose.pose.position.z); 
 }
@@ -187,7 +187,7 @@ void landingVelocityControl()
 {
     vs_body_axis.header.seq++;
     vs_body_axis.header.stamp = ros::Time::now();
-    cout<<"landing velocity control err_x/y: "<<err_x<<" "<<err_y<<endl;
+    //cout<<"landing velocity control err_x/y: "<<err_x<<" "<<err_y<<endl;
     dt = ros::Time::now().toSec() - last_timestamp;
 
     // 当 x y方向位置偏差小于阈值时(阈值与高度相关)，逐渐降落，同时x y方向在继续调整偏差(0.3待调整)
@@ -243,8 +243,8 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "land_on_apriltag");
     ros::NodeHandle nh;
-
-    // arm 与 disarm service 使用
+	
+	// arm 与 disarm service 使用
     mavros_msgs::CommandBool arm_cmd;
     arm_cmd.request.value = false; // 未解锁
 
@@ -258,7 +258,7 @@ int main(int argc, char **argv)
     ros::Time time_disarm(0);
     ros::Time time_land(0);
 
-    printf("------------landing control node running successfully-------------\n");
+    ROS_INFO("------------landing control node running successfully-------------\n");
 
     // pub vel_sp
     ros::Publisher bodyAxisVelocityPublisher = nh.advertise<geometry_msgs::TwistStamped>("/mavros/setpoint_velocity/cmd_vel", 10);
@@ -385,7 +385,7 @@ int main(int argc, char **argv)
         }
 
         // 此句为测试代码，不用 arm 飞机，直接看速度控制输出量 
-        //landingVelocityControl();
+        landingVelocityControl();
 
         //发布速度控制量
         bodyAxisVelocityPublisher.publish(vs_body_axis);

@@ -23,7 +23,7 @@ float uav_x_distance = 0.0;
 float uav_y_distance = 0.0;
 
 static const unsigned MAX_NO_LOGFILE = 999;     /**< Maximum number of log files */
-static const char *log_dir = "/home/breeze/logs";
+static const char *log_dir = "/home/odroid/logs";
 
 FILE *fd = NULL;
 

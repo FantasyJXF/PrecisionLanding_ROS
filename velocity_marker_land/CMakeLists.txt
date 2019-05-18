@@ -16,13 +16,29 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   tf
   std_msgs
+  sensor_msgs
   geometry_msgs
 )
 
+################################################
+## Declare ROS messages, services and actions ##
+################################################
+
+## Generate messages in the 'msg' folder
+add_message_files(
+  DIRECTORY msg
+  FILES
+  command.msg
+)
+
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 catkin_package(
 )
-
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
@@ -34,7 +50,7 @@ add_executable(velocity_marker_land_node src/velocity_marker_land_node.cpp)
 
 add_executable(land_on_apriltag src/land_on_apriltag.cpp)
 #add_dependencies(velocity_marker_tracker_node $(velocity_marker_tracker)_gencfg)
-
+add_executable(auto_land_node src/auto_land.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(velocity_marker_land_node
@@ -42,5 +58,9 @@ target_link_libraries(velocity_marker_land_node
 )
 
 target_link_libraries(land_on_apriltag
+${catkin_LIBRARIES}
+)
+
+target_link_libraries(auto_land_node
 ${catkin_LIBRARIES}
 )

@@ -144,7 +144,7 @@ void TagDetectionsReceived(const geometry_msgs::PoseStamped::ConstPtr& tag_msg)
         //一旦发现标志，将未发现mark的计数标志复位0
         flag_not_found_mark = 0;
 
-        cout<<" err_x "<<err_x<<" err_y "<<err_y<<endl;
+        //cout<<" err_x "<<err_x<<" err_y "<<err_y<<endl;
 
     } 
     
@@ -176,8 +176,6 @@ void TagDetectionsReceived(const geometry_msgs::PoseStamped::ConstPtr& tag_msg)
     //fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n ",err_x,err_y,uav_altitude);  
 
 }
-
-
 
 // 飞机降落速度控制
 void landingVelocityControl()

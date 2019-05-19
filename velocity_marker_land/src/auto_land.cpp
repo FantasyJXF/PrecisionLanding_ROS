@@ -112,8 +112,9 @@ int main(int argc, char **argv)
     //ros::Subscriber vision_flag_sub = nh.subscribe<geometry_msgs::Pose>("/vision/vision_flag", 10, vision_flag);
     ros::Subscriber vision_flag_sub = nh.subscribe<geometry_msgs::Pose>("/apriltags/relative_position", 10, vision_flag);
 
-    // 【发布】发送给position_control.cpp的命令
-    ros::Publisher command_pub = nh.advertise<velocity_marker_land::command>("/px4/command", 10);
+    // 【发布】发送给position_sender.cpp的命令
+    //ros::Publisher command_pub = nh.advertise<velocity_marker_land::command>("/px4/command", 10);
+    ros::Publisher command_pub = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
 
 //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>参数读取<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     //降落追踪控制算法 的比例参数
@@ -223,7 +224,7 @@ int main(int argc, char **argv)
                 if(distance_pad < Thres_distance_land && num_count > Thres_count_land)
                 {
                     cout<< "Flag_reach_pad_center: " << "true" << endl;
-                    Flag_reach_pad_center = 1;
+                    Flag_reach_pad_center = 0; // 跟高度比不会小于0.3
                 }else
                 {
                     cout<< "Flag_reach_pad_center: " << "flase" <<endl;

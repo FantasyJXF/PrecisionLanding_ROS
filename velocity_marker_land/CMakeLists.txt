@@ -50,7 +50,7 @@ add_executable(velocity_marker_land_node src/velocity_marker_land_node.cpp)
 
 add_executable(land_on_apriltag src/land_on_apriltag.cpp)
 #add_dependencies(velocity_marker_tracker_node $(velocity_marker_tracker)_gencfg)
-add_executable(auto_land_node src/auto_land.cpp)
+#add_executable(auto_land_node src/auto_land.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(velocity_marker_land_node
@@ -61,6 +61,6 @@ target_link_libraries(land_on_apriltag
 ${catkin_LIBRARIES}
 )
 
-target_link_libraries(auto_land_node
-${catkin_LIBRARIES}
-)
+#target_link_libraries(auto_land_node
+#${catkin_LIBRARIES}
+#)

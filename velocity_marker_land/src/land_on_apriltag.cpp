@@ -3,6 +3,7 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <mavros_msgs/CommandBool.h>
 #include <mavros_msgs/State.h>
+#include <mavros_msgs/PositionTarget.h>
 #include <mavros_msgs/SetMode.h>
 #include <tf/tf.h>
 #include <tf/transform_datatypes.h>
@@ -18,6 +19,7 @@ double uavRollENU, uavPitchENU, uavYawENU;
 double err_x, err_y, err_z;
 double last_err_x, last_err_y, last_err_z;
 double last_timestamp;
+double last_tag_timestamp;
 
 double xyP, xyI, xyD, zP, zI, zD, yawP, yawD;
 double dt;
@@ -34,7 +36,7 @@ bool flag_enter_position_hold = false;
 bool vision_flag = false;
 
 static const unsigned MAX_NO_LOGFILE = 999;     /**< Maximum number of log files */
-static const char *log_dir = "/home/odroid/logs";
+static const char *log_dir = "/home/breeze/logs";
 
 FILE *fd = NULL;
 
@@ -126,81 +128,39 @@ void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
     // err_z = -uav_altitude;
 }
 
+
 //obtain the apriltags pose
 void TagDetectionsReceived(const geometry_msgs::Pose::ConstPtr& tag_msg)
 {   
-    last_timestamp = ros::Time::now().toSec();
+    last_tag_timestamp = ros::Time::now().toSec();
     vision_flag = true;
-
-    // 获取无人机相对apriltag的xy距离  
-    // For geometry_msgs::PoseStamped::ConstPtr& tag_msg
-    // uav_x_distance = tag_msg->pose.position.x;
-    // uav_y_distance = tag_msg->pose.position.y;
-    // uav_z_distance = tag_msg->pose.position.z;
     
-    // For geometry_msgs::Pose::ConstPtr& tag_msg   
     uav_x_distance = tag_msg->position.x;
     uav_y_distance = tag_msg->position.y;
     //uav_z_distance = uav_altitude;
-
-
-    // static int flag_not_found_mark = 0;
-
-    // if (abs(uav_x_distance) > 0 && abs(uav_y_distance) > 0) 
-    // {
-
-    //    // 将无人机与mark在 x y z 方向的距离偏差，分别表示为err_ ,便于控制部分的理解
-    //     // x轴反向，y,z轴重合
-    //     err_x = uav_x_distance;
-    //     err_y = -uav_y_distance;
-
-    //     //一旦发现标志，将未发现mark的计数标志复位0
-    //     flag_not_found_mark = 0;
-    // } 
-    
-    // // 说明： 1.8m 只是尝试值，明显有点大
-    // // offboard 模式下，高度大于1.8m？，连续 10次 未发现标志，认为目标丢失，自动进入定点悬停模式
-    // // 高度小于1.8m？，由于 Tag 占图像大部分，飞机晃动，Tag很容易出视野，识别失败，此时保持继续降落
-    // else    
-    // {
-    //     flag_not_found_mark++;
-    //     cout<<"It has been "<<flag_not_found_mark<<" times not seen the tag"<<endl;
-    //     if (uav_altitude > 1.8 && (flag_not_found_mark >= 4))
-    //     {           
-    //        ROS_INFO_STREAM("Fail to found mark, enter Position Hold");
-    //        flag_enter_position_hold = true;
-    //     }
-    //     else if(uav_altitude < 1.8 && (flag_not_found_mark >= 4))
-    //     {
-    //         err_x = 0.0;
-    //         err_y = 0.0;
-    //         last_err_x = 0.0;
-    //         last_err_y = 0.0;
-    //     }else{
-    //         err_x = uav_x_distance;
-    //         err_y = -uav_y_distance;
-    //     }
-    // }
-
-    // //fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n ",err_x,err_y,uav_altitude);  
-
 }
 
 // 飞机降落速度控制
 void landingVelocityControl()
 {
+    static int flag_not_found_mark = 0;
     vs_body_axis.header.seq++;
     vs_body_axis.header.stamp = ros::Time::now();
     //cout<<"landing velocity control err_x/y: "<<err_x<<" "<<err_y<<endl;
     dt = ros::Time::now().toSec() - last_timestamp;
 
-    if(dt > 2e-1)
+    if(ros::Time::now().toSec() - last_tag_timestamp > 5e-2)
     {
+        //cout<<" lost the vision"<<endl;
         vision_flag = false;
     }
-
-    static int flag_not_found_mark = 0;
-
+    else
+    {
+        //cout<<"vision regain"<<endl;
+        vision_flag = true;
+        flag_not_found_mark = 0;
+    }
+    
     if (vision_flag) 
     {
         // tag 在图像中心时没有误差
@@ -220,10 +180,11 @@ void landingVelocityControl()
     else    
     {
         flag_not_found_mark++;
-        cout<<"It has been "<<flag_not_found_mark<<" times not seen the tag"<<endl;
-        if (uav_altitude >= 1.8 && (flag_not_found_mark >= 4))
+        //cout<<"It has been "<<flag_not_found_mark<<" times not seen the tag"<<endl;
+        if (uav_altitude >= 1.8 && (flag_not_found_mark >= 10))
         {           
            ROS_INFO_STREAM("Fail to found mark, enter Position Hold");
+           flag_not_found_mark = 0;
            flag_enter_position_hold = true;
         }
         else
@@ -234,6 +195,9 @@ void landingVelocityControl()
             last_err_y = 0.0;
         }
     }
+
+    if(1000 == flag_not_found_mark)
+        flag_not_found_mark = 0;
 
     // 当 x y方向位置偏差小于阈值时(阈值与高度相关)，逐渐降落，同时x y方向在继续调整偏差(0.5待调整)
     if (!(fabs(err_x) < 0.5) && !(fabs(err_y) < 0.5))
@@ -287,13 +251,15 @@ int main(int argc, char **argv)
     int flag_time1 = 0;
 
     last_timestamp = ros::Time::now().toSec();
+    last_tag_timestamp = ros::Time::now().toSec();
     ros::Time time_disarm(0);
     ros::Time time_land(0);
 
     ROS_INFO("------------landing control node running successfully-------------\n");
 
     // pub vel_sp
-    ros::Publisher bodyAxisVelocityPublisher = nh.advertise<geometry_msgs::TwistStamped>("/mavros/setpoint_velocity/cmd_vel", 10);
+    //ros::Publisher bodyAxisVelocityPublisher = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_velocity/cmd_vel", 10);
+    ros::Publisher bodyAxisVelocityPublisher = nh.advertise<mavros_msgs::PositionTarget>("/mavros/setpoint_raw/local", 10);
 
     // sub flight mode
     ros::Subscriber stateSubscriber = nh.subscribe("mavros/state", 10, stateReceived);
@@ -306,7 +272,7 @@ int main(int argc, char **argv)
 
     // sub tag
     //ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/apriltags/detections", 5, TagDetectionsReceived);  
-    ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/apriltags/relative_position", 20, TagDetectionsReceived);  
+    ros::Subscriber TagDetectionsSubscriber = nh.subscribe("/apriltags/relative_position", 10, TagDetectionsReceived);  
 
     // client arm/disarmed
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
@@ -411,16 +377,24 @@ int main(int argc, char **argv)
                 }
             }
         }
-        else
-        {
-            //ROS_INFO_STREAM("Offboard not running");
-        }
 
         // 此句为测试代码，不用 arm 飞机，直接看速度控制输出量 
-        //landingVelocityControl();
+        landingVelocityControl();
 
         //发布速度控制量
-        bodyAxisVelocityPublisher.publish(vs_body_axis);
+        mavros_msgs::PositionTarget pos_setpoint;
+        pos_setpoint.type_mask = 0b100111000111;
+
+        //uint8 FRAME_LOCAL_NED = 1
+        //uint8 FRAME_BODY_NED = 8
+        pos_setpoint.coordinate_frame = 8;
+
+        pos_setpoint.velocity.x = vs_body_axis.twist.linear.x;
+        pos_setpoint.velocity.y = vs_body_axis.twist.linear.y;
+        pos_setpoint.velocity.z = vs_body_axis.twist.linear.z;
+
+        //pos_setpoint.yaw = yaw_sp * M_PI/180;
+        bodyAxisVelocityPublisher.publish(pos_setpoint);
       
         ros::spinOnce();
         loopRate.sleep();

@@ -117,9 +117,9 @@
                 ROS_INFO("already armed");
             }
         }
-        else{
-            ROS_INFO("The current flight mode is not OFFBOARD");
-        }
+        //else{
+            //ROS_INFO("The current flight mode is not OFFBOARD");
+        //}
 
         local_pos_pub.publish(pose);
  

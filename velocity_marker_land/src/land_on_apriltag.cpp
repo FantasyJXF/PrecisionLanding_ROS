@@ -36,7 +36,7 @@ bool flag_enter_position_hold = false;
 bool vision_flag = false;
 
 static const unsigned MAX_NO_LOGFILE = 999;     /**< Maximum number of log files */
-static const char *log_dir = "/home/breeze/logs";
+static const char *log_dir = "/home/odroid/logs";
 
 FILE *fd = NULL;
 
@@ -103,6 +103,7 @@ void uavAltReceived(const sensor_msgs::Range::ConstPtr& msg)
 
     uav_altitude = msg->range;
     cout<<"The altitude is "<<uav_altitude << "m"<<endl;
+	fprintf(fd,"atl = %0.3f \n ", msg->range);  
 }
 
 // 无人机位置和姿态，From 内部传感器
@@ -138,6 +139,8 @@ void TagDetectionsReceived(const geometry_msgs::Pose::ConstPtr& tag_msg)
     uav_x_distance = tag_msg->position.x;
     uav_y_distance = tag_msg->position.y;
     //uav_z_distance = uav_altitude;
+
+	fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n ",tag_msg->position.x,tag_msg->position.y,tag_msg->position.z);  
 }
 
 // 飞机降落速度控制
@@ -379,7 +382,7 @@ int main(int argc, char **argv)
         }
 
         // 此句为测试代码，不用 arm 飞机，直接看速度控制输出量 
-        landingVelocityControl();
+        //landingVelocityControl();
 
         //发布速度控制量
         mavros_msgs::PositionTarget pos_setpoint;

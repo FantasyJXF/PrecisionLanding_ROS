@@ -98,13 +98,13 @@ FILE* open_log_file()
     return _fd;
 }
 
-void uavAltReceived(const sensor_msgs::Range::ConstPtr& msg)
-{    
+// void uavAltReceived(const sensor_msgs::Range::ConstPtr& msg)
+// {    
 
-    uav_altitude = msg->range;
-    cout<<"The altitude is "<<uav_altitude << "m"<<endl;
-	fprintf(fd,"atl = %0.3f \n ", msg->range);  
-}
+//     uav_altitude = msg->range;
+//     cout<<"The altitude is "<<uav_altitude << "m"<<endl;
+// 	fprintf(fd,"atl = %0.3f \n ", msg->range);  
+// }
 
 // 无人机位置和姿态，From 内部传感器
 void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
@@ -123,8 +123,8 @@ void uavPoseReceived(const geometry_msgs::PoseStampedConstPtr& msg)
     tf::Matrix3x3(quat).getRPY(uavRollENU, uavPitchENU, uavYawENU); // 由四元数得到欧拉角
     //ROS_INFO("Current UAV angles: roll=%0.3f, pitch=%0.3f, yaw=%0.3f", uavRollENU*180/3.1415926, uavPitchENU*180/3.1415926, uavYawENU*180/3.1415926);  
 
-    // uav_altitude = msg->pose.position.z;
-    // //cout<<"The altitude is "<<uav_altitude<<endl;
+    uav_altitude = -msg->pose.position.z;
+    cout<<"The altitude is "<<uav_altitude<<endl;
 
     // err_z = -uav_altitude;
 }
@@ -138,9 +138,9 @@ void TagDetectionsReceived(const geometry_msgs::Pose::ConstPtr& tag_msg)
     
     uav_x_distance = tag_msg->position.x;
     uav_y_distance = tag_msg->position.y;
-    //uav_z_distance = uav_altitude;
+    uav_z_distance = uav_altitude;
 
-	fprintf(fd,"X = %0.3f \n Y = %0.3f \n Z = %0.3f \n ",tag_msg->position.x,tag_msg->position.y,tag_msg->position.z);  
+	fprintf(fd,"X = %0.3f\t Y = %0.3f\t Z = %0.3f\n", tag_msg->position.x,tag_msg->position.y,tag_msg->position.z);  
 }
 
 // 飞机降落速度控制
@@ -166,7 +166,7 @@ void landingVelocityControl()
     
     if (vision_flag) 
     {
-        // tag 在图像中心时没有误差
+        // tag 在图像中心时没有误差,以图像中心为坐标轴原点向右为x正轴，向下为y轴正轴建立坐标系
         // tag在图片左边x方向距离为负，tag在右边x方向为正，对应的是飞机的Y轴横滚方向
         // tag在图片下侧y方向距离为负，tag在上侧y方向为正，对应的是飞机的X轴俯仰方向 
         // 将无人机与mark在 x y z 方向的距离偏差，分别表示为err_ ,便于控制部分的理解
@@ -194,8 +194,8 @@ void landingVelocityControl()
         {
             err_x = 0.0;
             err_y = 0.0;
-            last_err_x = 0.0;
-            last_err_y = 0.0;
+            // last_err_x = 0.0;
+            // last_err_y = 0.0;
         }
     }
 
@@ -203,7 +203,7 @@ void landingVelocityControl()
         flag_not_found_mark = 0;
 
     // 当 x y方向位置偏差小于阈值时(阈值与高度相关)，逐渐降落，同时x y方向在继续调整偏差(0.5待调整)
-    if (!(fabs(err_x) < 0.5) && !(fabs(err_y) < 0.5))
+    if ((fabs(err_x) >= 0.5) || (fabs(err_y) >= 0.5))
     {
         vs_body_axis.twist.linear.x = 0.8 * (err_x * xyP + (err_x - last_err_x) / dt * xyD);
         vs_body_axis.twist.linear.y = 0.8 * (err_y * xyP + (err_y - last_err_y) / dt * xyD);
@@ -225,13 +225,16 @@ void landingVelocityControl()
     }
    
     // 速度限幅
-    vs_body_axis.twist.linear.x = (vs_body_axis.twist.linear.x>0.8)?0.8\
-                                  :((vs_body_axis.twist.linear.x<-0.8)?-0.8:vs_body_axis.twist.linear.x);
-    vs_body_axis.twist.linear.y = (vs_body_axis.twist.linear.y>0.8)?0.8\
-                                  :((vs_body_axis.twist.linear.y<-0.8)?-0.8:vs_body_axis.twist.linear.y);
+    vs_body_axis.twist.linear.x = (vs_body_axis.twist.linear.x>0.5)?0.5\
+                                  :((vs_body_axis.twist.linear.x<-0.5)?-0.5:vs_body_axis.twist.linear.x);
+    vs_body_axis.twist.linear.y = (vs_body_axis.twist.linear.y>0.5)?0.5\
+                                  :((vs_body_axis.twist.linear.y<-0.5)?-0.5:vs_body_axis.twist.linear.y);
     vs_body_axis.twist.linear.z = (vs_body_axis.twist.linear.z>0.5)?0.5\
                                   :((vs_body_axis.twist.linear.z<-0.5)?-0.5:vs_body_axis.twist.linear.z);  
 
+    cout<<"err_x is " << err_x << "vx is " << vs_body_axis.twist.linear.x << endl;
+    cout<<"err_y is " << err_y << "vy is " << vs_body_axis.twist.linear.y << endl;
+    cout<<"alt is " << uav_altitude << "vz is " << vs_body_axis.twist.linear.z << endl;
     // 更新偏差值 
     last_err_x = err_x;
     last_err_y = err_y;
@@ -268,7 +271,7 @@ int main(int argc, char **argv)
     ros::Subscriber stateSubscriber = nh.subscribe("mavros/state", 10, stateReceived);
 
     // sub uav altitude
-    ros::Subscriber uavAltSubscriber = nh.subscribe("/mavros/px4flow/ground_distance", 100, uavAltReceived);
+    //ros::Subscriber uavAltSubscriber = nh.subscribe("/mavros/px4flow/ground_distance", 100, uavAltReceived);
 
     // sub uavpose
     ros::Subscriber uavPoseSubscriber = nh.subscribe("/mavros/local_position/pose", 1000, uavPoseReceived);
@@ -382,7 +385,7 @@ int main(int argc, char **argv)
         }
 
         // 此句为测试代码，不用 arm 飞机，直接看速度控制输出量 
-        //landingVelocityControl();
+        landingVelocityControl();
 
         //发布速度控制量
         mavros_msgs::PositionTarget pos_setpoint;
